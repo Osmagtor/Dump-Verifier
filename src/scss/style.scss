@@ -1,0 +1,294 @@
+@import '../../node_modules/tippy.js/dist/tippy.css';
+@import '../../node_modules/tippy.js/animations/scale-subtle.css';
+@import '../../node_modules/tom-select/dist/css/tom-select.default.css';
+
+$colorOSAccentColor: var(--os-accent-color);
+$outline: 2px solid $colorOSAccentColor !important;
+$colorBackground: var(--background);
+$colorFont: var(--font);
+$colorConsoleBorder: var(--console-border);
+$colorConsole: var(--console);
+$colorConsoleAlternative: var(--console-alternative);
+$colorButtonNormal: var(--button-normal);
+$colorButtonHover: var(--button-hover);
+$colorButtonFocus: var(--button-focus);
+$colorDisabled: var(--disabled);
+$colorSelect: var(--select);
+
+$colorSubmitNormal: var(--submit-normal);
+$colorSubmitHover: var(--submit-hover);
+$colorSubmitFocus: var(--submit-focus);
+$colorSubmitDisabled: var(--submit-disabled);
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 14px;
+    color: $colorFont;
+}
+
+body {
+
+    overflow: hidden;
+    background-color: $colorBackground;
+
+    >form {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: flex-start;
+
+        padding: 10px;
+
+        height: 100vh;
+        width: 100vw;
+
+        position: relative;
+
+        >div {
+            margin: 10px;
+
+            &.row {
+                display: grid;
+                grid-template-columns: 65px 480px;
+                align-items: center;
+                justify-content: center;
+            }
+
+            >label {
+                font-weight: bolder;
+                margin-right: 10px;
+            }
+        }
+
+        >#console {
+
+            border: solid 1px $colorConsoleBorder;
+
+            overflow-y: auto;
+            overflow-x: hidden;
+
+            width: 545px;
+            height: 270px;
+
+            font-size: 12px;
+
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: flex-start;
+
+            scrollbar-width: thin;
+            scrollbar-color: $colorButtonFocus transparent;
+
+            margin-top: 15px;
+
+            &:focus-visible {
+                outline: $outline;
+            }
+
+            span,
+            i {
+                font-size: 12px;
+                color: inherit;
+            }
+
+            >span {
+                padding: 2px 5px;
+                width: 100%;
+                min-height: 20px;
+
+                text-wrap: nowrap;
+
+                &:nth-child(odd) {
+                    background-color: $colorConsoleAlternative;
+                }
+
+                &:nth-child(even) {
+                    background-color: $colorConsole;
+                }
+            }
+        }
+
+        input[type="submit"] {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+
+            &:focus-visible {
+                outline: $outline;
+            }
+        }
+
+        input[type="submit"],
+        button {
+
+            background-color: $colorButtonNormal;
+
+            width: fit-content;
+
+            transition: background-color 500ms;
+
+            padding: 7px;
+
+            border: none;
+            border-radius: 5px;
+
+            cursor: pointer;
+
+            &:hover {
+                background-color: $colorButtonHover;
+            }
+
+            &:active {
+                background-color: $colorButtonFocus;
+            }
+
+            &:disabled {
+                background-color: $colorDisabled;
+                pointer-events: none;
+            }
+
+            &:focus-visible {
+                outline: $outline;
+            }
+        }
+
+        input[type="submit"] {
+
+            background-color: $colorSubmitNormal;
+
+            &:hover {
+                background-color: $colorSubmitHover;
+            }
+
+            &:active {
+                background-color: $colorSubmitFocus;
+            }
+
+            &:disabled {
+                background-color: $colorSubmitDisabled;
+                pointer-events: none;
+            }
+
+            &:focus-visible {
+                outline: $outline;
+            }
+        }
+
+        #clear {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+        }
+
+        #log {
+            position: absolute;
+            bottom: 20px;
+            left: 135px;
+        }
+
+        #redump {
+            position: absolute;
+            bottom: 20px;
+            left: 218px;
+        }
+
+        #no-intro {
+            position: absolute;
+            bottom: 20px;
+            left: 348px;
+        }
+
+        /* Tom-Select library */
+
+        .ts-wrapper {
+
+            min-height: 0px !important;
+
+            &.focus {
+                outline: $outline;
+            }
+
+            .ts-control {
+
+                padding: 6px 6px !important;
+
+                input {
+                    color: $colorFont !important;
+                }
+            }
+        }
+
+        .ts-dropdown-content {
+
+            scrollbar-width: thin;
+            scrollbar-color: $colorButtonFocus transparent;
+
+            .option {
+                &.active {
+                    background-color: $colorOSAccentColor !important;
+                    color: $colorFont !important;
+                }
+            }
+        }
+
+        .ts-wrapper,
+        .ts-dropdown,
+        .ts-control,
+        .tom-select-search__field {
+            border: 0px solid transparent !important;
+            border-radius: 5px !important;
+            transition: background-color 500ms;
+            background-color: $colorSelect !important;
+            background-image: none !important;
+            box-shadow: none !important;
+
+            &.disabled {
+                background-color: $colorDisabled !important;
+            }
+        }
+    }
+
+    #help {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+
+        color: $colorFont;
+        font-weight: bolder;
+
+        border-radius: 50%;
+        border: 2px solid $colorFont;
+
+        width: 23px;
+        height: 23px;
+
+        display: flex;
+        justify-content: center;
+        align-items: center;
+
+        cursor: help;
+    }
+
+    .tippy-box {
+        background: $colorButtonHover !important;
+        color: $colorFont !important;
+        box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
+
+        p {
+            margin: 10px;
+        }
+
+        ol {
+            margin-left: 24px;
+        }
+    }
+
+    .tippy-arrow {
+        color: $colorButtonHover !important;
+    }
+}

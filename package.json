@@ -1,0 +1,86 @@
+{
+  "name": "dump-verifier",
+  "version": "1.0.0",
+  "description": "A tool to verify game dumps using the redump.org and no-intro.org databases.",
+  "license": "Apache-2.0",
+  "author": "Óscar Maganto Torres",
+  "main": "dist/js/main.cjs",
+  "type": "module",
+  "scripts": {
+    "start": "electron-forge start",
+    "package": "electron-forge package",
+    "make": "electron-forge make",
+    "publish": "electron-forge publish",
+    "lint": "echo \"No linting configured\"",
+    "watch": "node esbuild.config.js"
+  },
+  "keywords": [],
+  "dependencies": {
+    "electron-squirrel-startup": "^1.0.1",
+    "jquery": "^3.7.1",
+    "js-confetti": "^0.12.0",
+    "jszip": "^3.10.1",
+    "tippy.js": "^6.3.7",
+    "tom-select": "^2.4.3"
+  },
+  "devDependencies": {
+    "@electron-forge/cli": "^7.8.2",
+    "@electron-forge/maker-deb": "^7.8.2",
+    "@electron-forge/maker-rpm": "^7.8.2",
+    "@electron-forge/maker-squirrel": "^7.8.2",
+    "@electron-forge/maker-zip": "^7.8.2",
+    "@electron-forge/plugin-auto-unpack-natives": "^7.8.2",
+    "@electron-forge/plugin-fuses": "^7.8.2",
+    "@electron/fuses": "^1.8.0",
+    "@types/jquery": "^3.5.32",
+    "@types/tippy.js": "^6.3.0",
+    "electron": "37.2.4",
+    "esbuild": "^0.25.8"
+  },
+  "config": {
+    "forge": {
+      "packagerConfig": {
+        "ignore": [
+          "dat($|/)"
+        ],
+        "files": [
+          "dist/**/*",
+          "img/*"
+        ],
+        "name": "Dump Verifier",
+        "icon": "img/icon.icns",
+        "executableName": "dump-verifier"
+      },
+      "makers": [
+        {
+          "name": "@electron-forge/maker-squirrel",
+          "platforms": [
+            "win32"
+          ],
+          "config": {
+            "icon": "img/icon.ico",
+            "setupIcon": "img/icon.ico"
+          }
+        },
+        {
+          "name": "@electron-forge/maker-zip",
+          "platforms": [
+            "darwin"
+          ],
+          "config": {
+            "icon": "img/icon.icns"
+          }
+        },
+        {
+          "name": "@electron-forge/maker-deb",
+          "platforms": [
+            "linux"
+          ],
+          "config": {
+            "icon": "img/icon.ico"
+          }
+        }
+      ]
+    }
+  }
+}

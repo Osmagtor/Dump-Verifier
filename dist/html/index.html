@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Dump Verifier</title>
+
+    <link rel="stylesheet" href="../css/style.css" />
+    <script src="../js/renderer.js" type="module"></script>
+</head>
+
+<body>
+    <form>
+        <div class="row">
+            <label for="files">File</label>
+            <button id="files">Select file(s)</button>
+            <input type="hidden" name="filepaths" id="filepaths">
+        </div>
+
+        <div class="row">
+            <label for="system">System</label>
+            <input id="system" name="system" />
+        </div>
+
+        <div class="row">
+            <label for="game">Game</label>
+            <input id="game" name="game" />
+        </div>
+
+        <div id="help">?</div>
+
+        <div id="console"></div>
+
+        <button id="clear">Clear console</button>
+        <button id="log">Save log</button>
+        <button id="redump">Update Redump</button>
+        <button id="no-intro">Upload No-intro</button>
+
+        <input type="submit" value="Verify">
+    </form>
+</body>
+
+</html>
