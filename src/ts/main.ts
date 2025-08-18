@@ -16,7 +16,7 @@ if (process.platform === 'win32') {
     height = 560;
 } else if (process.platform === 'darwin') {
     baseDir = app.getPath('userData');
-    width = 580;
+    width = 585;
     height = 490;
 } else {
     baseDir = app.getPath('userData');
@@ -212,8 +212,8 @@ function createWindow(): void {
     const icon: string = path.join(app.getAppPath(), 'img/icon.ico');
 
     const win: BrowserWindow = new BrowserWindow({
-        width: 600,
-        height: 560,
+        width: width,
+        height: height,
         resizable: false,
         icon: icon,
         webPreferences: {
