@@ -16,7 +16,7 @@ if (process.platform === 'win32') {
     height = 560;
 } else if (process.platform === 'darwin') {
     baseDir = app.getPath('userData');
-    width = 585;
+    width = 580;
     height = 490;
 } else {
     baseDir = app.getPath('userData');
@@ -27,6 +27,10 @@ if (process.platform === 'win32') {
 app.whenReady().then((): void => {
 
     createWindow();
+
+    ipcMain.handle('getOS', async (): Promise<string> => {
+        return process.platform;
+    });
 
     ipcMain.handle('createDat', async (): Promise<void> => {
         try {
