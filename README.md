@@ -1,4 +1,4 @@
-# DUMP VERIFIER
+# Dump Verifier
 
 An Electron app to verify game dumps using the `redump.org` and `no-intro.org` databases.
 
