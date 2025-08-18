@@ -56,10 +56,6 @@ body {
                 grid-template-columns: 65px 480px;
                 align-items: center;
                 justify-content: center;
-
-                &.mac {
-                    grid-template-columns: 65px 495px;
-                }
             }
 
             >label {
@@ -89,10 +85,6 @@ body {
             scrollbar-color: $colorButtonFocus transparent;
 
             margin-top: 15px;
-
-            &.mac {
-                width: 560px;
-            }
 
             &:focus-visible {
                 outline: $outline;

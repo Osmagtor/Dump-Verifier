@@ -50,12 +50,6 @@ $(document).ready(async (): Promise<void> => {
 
     disableForm();
 
-    // Get the OS type
-
-    //@ts-ignore
-    const osType: string = await window.electron.ipcRenderer.invoke('getOS');
-    if (osType === 'darwin') $('.row, #console').addClass('mac');
-
     // Adding the tooltip
 
     //@ts-ignore
