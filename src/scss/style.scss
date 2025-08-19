@@ -96,19 +96,39 @@ body {
             span,
             i,
             a {
+
                 font-size: 12px;
 
                 &.text {
+
                     &-success {
+
                         color: $colorConsoleTextGreen;
+
+                        i,
+                        a {
+                            color: inherit;
+                        }
                     }
 
                     &-error {
+
                         color: $colorConsoleTextRed;
+
+                        i,
+                        a {
+                            color: inherit;
+                        }
                     }
 
                     &-normal {
+
                         color: inherit;
+
+                        i,
+                        a {
+                            color: inherit;
+                        }
                     }
                 }
 
@@ -123,11 +143,8 @@ body {
                         }
 
                         &-success {
+                            @extend .info__percentage;
                             color: $colorConsoleTextGreen;
-
-                            &::after {
-                                content: ' %';
-                            }
                         }
                     }
 
@@ -139,13 +156,20 @@ body {
                 }
 
                 .progress-bar {
-                    padding-top: 10px;
-
                     >.progress-bar__segment {
-                        color: $colorFont;
+
+                        display: inline-block;
+
+                        width: 10px;
+                        height: 10px;
+
+                        margin: 0px 1px;
+
+                        background-color: $colorFont;
 
                         &-success {
-                            color: $colorConsoleTextGreen;
+                            @extend .progress-bar__segment;
+                            background-color: $colorConsoleTextGreen;
                         }
                     }
                 }

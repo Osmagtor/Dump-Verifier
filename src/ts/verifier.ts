@@ -1,4 +1,5 @@
 import { log, logLine } from './renderer.js';
+import $ from 'jquery';
 
 interface data {
     sha1: string;
@@ -53,15 +54,26 @@ class Verifier {
 
         this.total++;
 
-        let loadingBar: string = '';
-
-        for (let i = 0; i < 28; i++) {
-            loadingBar += '<span class="progress-bar__segment">⏹</span>'
-        }
+        // Logging the loading bar
 
         logLine();
         log(`Verifying <i>"${filepath}"</i>...`);
-        log(`Calculating SHA1: <span class='progress-bar'>${loadingBar}</span> <span class='info'><span class='info__percentage'>0</span> <span class='info__loading'></span></span>`, 'normal', true, false);
+        log(`<span class='message'>Calculating SHA1:</span> <span class='progress-bar'></span> <span class='info'><span class='info__percentage'>0</span> <span class='info__loading'></span></span>`, 'normal', true, false);
+
+        const coordsMsg: DOMRect = $('.message').last()[0].getBoundingClientRect();
+        const coordsPer: DOMRect = $('.info').last()[0].getBoundingClientRect();
+        const gap: number = (coordsPer.x - (coordsMsg.x + coordsMsg.width)) - 40;
+
+        let loadingBar: string = '';
+        const nSegments: number = Math.floor(gap / 12);
+
+        for (let i = 0; i < nSegments; i++) {
+            loadingBar += '<span class="progress-bar__segment"></span>'
+        }
+
+        $('.progress-bar').last().html(loadingBar);
+
+        // Starting with the verification process
 
         // @ts-ignore
         let sha1: string = await window.electron.ipcRenderer.invoke('hash', filepath);
@@ -134,7 +146,7 @@ class Verifier {
             const textNoIntro: { file: string; content: string }[] = await window.electron.ipcRenderer.invoke('readDatDirectory', 'dat/no-intro', 'json');
             data = [...textRedump, ...textNoIntro].flatMap((e: { file: string; content: string }) => e.content ? JSON.parse(e.content) : [])
         } else {
-            const [ _, folder, file ] = this.system.split('/');
+            const [_, folder, file] = this.system.split('/');
 
             // @ts-ignore
             const text: string = await window.electron.ipcRenderer.invoke('readDatFile', file, `dat/${folder}`);
