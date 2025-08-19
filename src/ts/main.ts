@@ -29,6 +29,10 @@ app.whenReady().then((): void => {
 
     createWindow();
 
+    ipcMain.handle('getVersion', async (): Promise<string> => {
+        return app.getVersion();
+    });
+
     ipcMain.handle('createDat', async (): Promise<void> => {
         try {
             const folderRedump: string = path.join(baseDir, 'dat/redump');

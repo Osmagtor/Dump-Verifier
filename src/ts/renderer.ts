@@ -33,7 +33,7 @@ window.electron.ipcRenderer.on('progress', (_, percentage) => {
 
     // Update the loading spinner
 
-    const spinnerFrames = ['⠋','⠙','⠹','⠸','⠼','⠴','⠦','⠧','⠇','⠏'];
+    const spinnerFrames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
     let spinnerIndex = 0;
 
     if (!loading) {
@@ -124,6 +124,10 @@ $(document).ready(async (): Promise<void> => {
     // Updating the select elements
 
     await updateSelects();
+
+    // Checking for updates
+
+    await checkUpdates();
 
     // Re-enabling the form
 
@@ -447,6 +451,48 @@ function disableForm(): void {
     $('form').find('form>div>input, button, input[type="submit"]').prop('disabled', true);
     if (selectSystems) selectSystems.disable();
     if (selectGames) selectGames.disable();
+}
+
+async function checkUpdates(): Promise<void> {
+
+    try {
+        // Getting the latest release version from GitHub
+
+        const res: Response = await fetch('https://api.github.com/repos/Osmagtor/Dump-Verifier/releases/latest');
+        const data: any = await res.json();
+        const latestVersion: string = (data.tag_name || data.name)?.replace('v', '');
+        const latestVersionLink: string = data.html_url;
+
+        // Getting the current version
+
+        // @ts-ignore
+        const currentVersion: string = await window.electron.ipcRenderer.invoke('getVersion');
+
+        logLine();
+        log(`You are currently in version: ${currentVersion}`);
+
+        if (currentVersion !== latestVersion) {
+            log(`A new version is available: <a id="latest-version-link" href='${latestVersionLink}' target='_blank'>${latestVersion}</a> 🎉`, 'normal', true, false);
+
+            // Delegate click to open in system browser
+            setTimeout(() => {
+
+                const link: JQuery<HTMLAnchorElement> = $('#latest-version-link');
+
+                if (link) {
+                    link.on('click', function (ev) {
+                        ev.preventDefault();
+                        // @ts-ignore
+                        window.electron.ipcRenderer.invoke('openExternal', this.href);
+                    });
+                }
+            }, 0);
+        } else {
+            log(`This is the latest version available`);
+        }
+    } catch (err: any) {
+        // Nothing, there's probably just no internet connection or the Github API is down
+    }
 }
 
 // EXPORTS
