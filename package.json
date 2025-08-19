@@ -1,6 +1,6 @@
 {
   "name": "dump-verifier",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "A tool to verify game dumps using the redump.org and no-intro.org databases.",
   "license": "Apache-2.0",
   "author": "Óscar Maganto Torres",
