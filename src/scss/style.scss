@@ -20,6 +20,9 @@ $colorSubmitHover: var(--submit-hover);
 $colorSubmitFocus: var(--submit-focus);
 $colorSubmitDisabled: var(--submit-disabled);
 
+$colorConsoleTextGreen: var(--console-green);
+$colorConsoleTextRed: var(--console-red);
+
 * {
     margin: 0;
     padding: 0;
@@ -93,7 +96,58 @@ body {
             span,
             i {
                 font-size: 12px;
-                color: inherit;
+
+                &.text {
+                    &-success {
+                        color: $colorConsoleTextGreen;
+                    }
+
+                    &-error {
+                        color: $colorConsoleTextRed;
+                    }
+
+                    &-normal {
+                        color: inherit;
+                    }
+                }
+
+                .info {
+
+                    float: right;
+
+                    >.info__percentage {
+
+                        &::after {
+                            content: ' %';
+                        }
+
+                        &-success {
+                            color: $colorConsoleTextGreen;
+
+                            &::after {
+                                content: ' %';
+                            }
+                        }
+                    }
+
+                    >.info__loading {
+                        &-success {
+                            color: $colorConsoleTextGreen;
+                        }
+                    }
+                }
+
+                .progress-bar {
+                    padding-top: 10px;
+
+                    >.progress-bar__segment {
+                        color: $colorFont;
+
+                        &-success {
+                            color: $colorConsoleTextGreen;
+                        }
+                    }
+                }
             }
 
             >span {

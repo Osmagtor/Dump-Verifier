@@ -4,7 +4,8 @@ contextBridge.exposeInMainWorld('electron', {
     ipcRenderer: {
         // @ts-ignore
         invoke: (...args) => ipcRenderer.invoke(...args),
-        // More methods can be added here if needed
+        // Add a generic event listener
+        on: (channel: string, listener: (...args: any[]) => void) => ipcRenderer.on(channel, listener),
     },
     onAccentColor: (callback: any) => {
         ipcRenderer.on('accent-color', (_, color: string) => callback(color));

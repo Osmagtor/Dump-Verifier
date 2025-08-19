@@ -6,6 +6,7 @@ import { shell } from 'electron';
 
 if (require('electron-squirrel-startup')) app.quit();
 
+let win: BrowserWindow | null = null;
 let baseDir: string;
 let width: number;
 let height: number;
@@ -157,18 +158,38 @@ app.whenReady().then((): void => {
         return path.basename(filePath);
     });
 
-    ipcMain.handle('hash', async (_, filepath: string, start: number = 0, end: number, size: number | null = null): Promise<string | null> => {
+    ipcMain.handle('hash', async (_, filepath: string, start: number = 0, end: number): Promise<string | null> => {
         try {
             return await new Promise((resolve, reject) => {
 
+                let percentageOld: string = '';
+                let bytesRead: number = 0;
+                const bytesTotal: number = (end === undefined ? fs.statSync(filepath).size : end) - start + 1;
                 const hash = crypto.createHash('sha1');
-                const stream = fs.createReadStream(filepath, { start: start, end: end });
+                const stream = fs.createReadStream(filepath, { start, end });
 
                 stream.on('error', err => reject(err));
                 hash.on('error', err => reject(err));
-                stream.on('end', () => resolve(hash.digest('hex')));
 
-                stream.pipe(hash);
+                stream.on('data', (chunk) => {
+
+                    hash.update(chunk);
+                    bytesRead += chunk.length;
+
+                    const percentage = Number((bytesRead / bytesTotal) * 100).toFixed(0);
+
+                    // Emitting a progress event
+
+                    if (win && percentage !== percentageOld) {
+                        percentageOld = percentage;
+                        win.webContents.send('progress', percentage);
+                    }
+                });
+
+                stream.on('end', () => {
+                    const finalHash = hash.digest('hex');
+                    resolve(finalHash);
+                });
             });
         } catch (err: any) {
             console.error(err);
@@ -207,7 +228,7 @@ function createWindow(): void {
 
     const icon: string = path.join(app.getAppPath(), 'img/icon.ico');
 
-    const win: BrowserWindow = new BrowserWindow({
+    win = new BrowserWindow({
         width: width,
         height: height,
         resizable: false,
@@ -228,10 +249,10 @@ function createWindow(): void {
 
         const callbackTheme = (): void => {
             const theme = getTheme();
-            win.webContents.send('theme', theme);
+            if (win) win.webContents.send('theme', theme);
         }
 
-        nativeTheme.on('updated', callbackTheme);
+        if (win) nativeTheme.on('updated', callbackTheme);
 
         callbackTheme();
     });

@@ -10,10 +10,50 @@ let consoleLog: string = '';
 let selectSystems: TomSelect | null = null;
 let selectGames: TomSelect | null = null;
 let games: data[] = [];
+let loading: any;
 
 // LISTENERS
 
-// Listen for the theme from the main process and sets it as CSS variable
+// Listen for the progress event from the main process and update the progress bar in the console
+//@ts-ignore
+window.electron.ipcRenderer.on('progress', (_, percentage) => {
+
+    // Update the percentage
+
+    const percent: JQuery<HTMLElement> = $('#console .info__percentage').last();
+    percent.text(percentage);
+
+    // Update the progress bar
+
+    const spans: JQuery<HTMLElement> = $('#console .progress-bar').last().find('span');
+    spans.slice(0, Math.floor(spans.length * (percentage / 100))).each((_, span: HTMLElement) => {
+        const c: string = $(span).attr('class') || '';
+        if (!c.includes('success')) $(span).attr('class', c + '-success')
+    });
+
+    // Update the loading spinner
+
+    const spinnerFrames = ['⠋','⠙','⠹','⠸','⠼','⠴','⠦','⠧','⠇','⠏'];
+    let spinnerIndex = 0;
+
+    if (!loading) {
+        loading = setInterval(() => {
+            $('#console .info__loading').last().text(spinnerFrames[spinnerIndex]);
+            spinnerIndex = (spinnerIndex + 1) % spinnerFrames.length;
+        }, 100);
+    } else if (percentage >= 100) {
+        clearInterval(loading);
+        loading = null;
+
+        const spinner: JQuery<HTMLElement> = $('#console .info__loading').last();
+        spinner.text('⠿');
+        spinner.attr('class', spinner.attr('class') + '-success');
+
+        percent.attr('class', percent.attr('class') + '-success');
+    }
+});
+
+// Listen for the theme event from the main process and set multiple CSS variables
 // @ts-ignore
 window.electron.onTheme((theme: string) => {
 
@@ -366,30 +406,18 @@ async function updateSelects(): Promise<void> {
  * @param message The message to log
  * @param type The type of message, which determines the color. Can be 'success', 'error', or 'normal'. Defaults to 'normal'
  * @param time Whether to prepend the current time to the message. Defaults to true
+ * @param store Whether to store the message in the consoleLog variable. Defaults to true
  */
-function log(message: string, type: 'success' | 'error' | 'normal' = 'normal', time: boolean = true): void {
+function log(message: string, type: 'success' | 'error' | 'normal' = 'normal', time: boolean = true, store: boolean = true): void {
 
     const log: JQuery<HTMLTextAreaElement> = $('#console');
-    let color: string = '';
-
-    switch (type) {
-        case 'success':
-            color = 'var(--console-green)';
-            break;
-        case 'error':
-            color = 'var(--console-red)';
-            break;
-        default:
-            color = 'var(--font)';
-            break;
-    }
 
     if (message) {
-        log.append(`<span>${time ? `[${new Date().toLocaleTimeString()}] ` : ''}<span style="color: ${color};">${message}</span></span>`);
-        consoleLog += `${time ? `[${new Date().toLocaleTimeString()}] ` : ''}${message.replace(/<\/?[a-zA-Z]+>/g, '')}\n`;
+        log.append(`<span>${time ? `[${new Date().toLocaleTimeString()}] ` : ''}<span class="text-${type}">${message}</span></span>`);
+        if (store) consoleLog += `${time ? `[${new Date().toLocaleTimeString()}] ` : ''}${message.replace(/<\/?[a-zA-Z]+>/g, '')}\n`;
     } else {
         log.append('<span></span>');
-        consoleLog += '\n';
+        if (store) consoleLog += '\n';
     }
 
     log.scrollTop(log[0].scrollHeight);

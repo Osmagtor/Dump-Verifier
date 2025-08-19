@@ -53,8 +53,15 @@ class Verifier {
 
         this.total++;
 
+        let loadingBar: string = '';
+
+        for (let i = 0; i < 28; i++) {
+            loadingBar += '<span class="progress-bar__segment">⏹</span>'
+        }
+
         logLine();
-        log(`Verifying <i>"${filepath}"</i>. Please wait...`);
+        log(`Verifying <i>"${filepath}"</i>...`);
+        log(`Calculating SHA1: <span class='progress-bar'>${loadingBar}</span> <span class='info'><span class='info__percentage'>0</span> <span class='info__loading'></span></span>`, 'normal', true, false);
 
         // @ts-ignore
         let sha1: string = await window.electron.ipcRenderer.invoke('hash', filepath);
