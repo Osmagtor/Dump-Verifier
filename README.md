@@ -39,5 +39,5 @@ The application consists of the following elements:
   2. Click on the `Request` button.
   3. Wait for the page to redirect you to a download (this may take a while).
   4. Click on the `Download` button.
-  5. Click on the `Upload No-intro` button and select all the `DAT` files you downloaded at once. Any previously `DAT` files previously uploaded will be deleted and the new ones will be processed.
+  5. Click on the `Upload No-intro` button and select all the `DAT` files you downloaded at once. Any previously uploaded `DAT` files will be deleted and the new ones will be processed.
 * A button to verify the currently selected game file(s).
