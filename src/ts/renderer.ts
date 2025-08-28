@@ -135,6 +135,16 @@ $(document).ready(async (): Promise<void> => {
     enableForm();
 });
 
+$('#credentials').on('click', async (ev): Promise<void> => {
+
+    ev.preventDefault();
+
+    const success: boolean = await Downloader.getToken();
+
+    if (success) $('#credentials').addClass('active');
+    else $('#credentials').removeClass('active');
+});
+
 $('#log').on('click', (ev): void => {
 
     ev.preventDefault();
@@ -380,8 +390,6 @@ async function updateSelects(): Promise<void> {
 
     games = [];
 
-    // console.log(systemSelected);
-
     if (systemSelected) {
         [_, folder, file] = systemSelected.split('/');
 
@@ -389,8 +397,6 @@ async function updateSelects(): Promise<void> {
         const jsonText: string = await window.electron.ipcRenderer.invoke('readDatFile', file, `dat/${folder}`);
         games = JSON.parse(jsonText);
     }
-
-    // console.log(systems, games);
 
     // Updating the Tom Select elements with the new options
 
@@ -440,6 +446,7 @@ function logLine(): void {
  */
 function enableForm(): void {
     $('form').find('form>div>input, button, input[type="submit"]').prop('disabled', false);
+    $('#credentials').css('pointer-events', 'auto');
     if (selectSystems) selectSystems.enable();
     if (selectGames) selectGames.enable();
 }
@@ -449,6 +456,7 @@ function enableForm(): void {
  */
 function disableForm(): void {
     $('form').find('form>div>input, button, input[type="submit"]').prop('disabled', true);
+    $('#credentials').css('pointer-events', 'none');
     if (selectSystems) selectSystems.disable();
     if (selectGames) selectGames.disable();
 }

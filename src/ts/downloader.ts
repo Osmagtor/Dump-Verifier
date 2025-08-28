@@ -1,4 +1,3 @@
-// @ts-ignore
 import { log, logLine } from './renderer.js';
 import { data } from './verifier.js';
 import JSZip from 'jszip';
@@ -16,89 +15,48 @@ class Downloader {
     private static loaded: number = 0;
     private static total: number = 0;
 
-    private static baseURL: string = "http://redump.org/datfile/";
+    private static cookies: string = '';
 
-    // Extracted from: http://wiki.redump.org/index.php?title=List_of_DB_Download_Links
+    private static async getPathURLs(): Promise<string[]> {
 
-    private static pathURLs: string[] = [
-        "3do/",
-        "acd/",
-        "ajcd/",
-        "arch/",
-        "audio-cd/",
-        "bd-video/",
-        "cd32/",
-        "cdi/",
-        "cdtv/",
-        "chihiro/",
-        "dc/",
-        "dvd-video/",
-        "fmt/",
-        "fpp/",
-        "gamewave/",
-        "gc-bios/",
-        "gc/",
-        "hddvd-video/",
-        "hs/",
-        "hvn/",
-        "hvnc/",
-        "hvnjr/",
-        "hvnxp/",
-        "ite/",
-        "ixl/",
-        "kea/",
-        "kfb/",
-        "km2/",
-        "ks573/",
-        "ksgv/",
-        "ksite/",
-        "lindbergh/",
-        "m2/",
-        "mac/",
-        "mcd/",
-        "naomi/",
-        "naomi2/",
-        "navi21/",
-        "ngcd/",
-        "ns246/",
-        "nuon/",
-        "palm/",
-        "pc-88/",
-        "pc-98/",
-        "pc-fx/",
-        "pc/",
-        "pce/",
-        "photo-cd/",
-        "pippin/",
-        "ppc/",
-        "ps2-bios/",
-        "ps2/",
-        "ps3/",
-        "ps4/",
-        "ps5/",
-        "psp/",
-        "psx-bios/",
-        "psx/",
-        "psxgs/",
-        "qis/",
-        "quizard/",
-        "sp21/",
-        "sre/",
-        "sre2/",
-        "ss/",
-        "trf/",
-        "vcd/",
-        "vflash/",
-        "vis/",
-        "wii/",
-        "wiiu/",
-        "x68k/",
-        "xbox-bios/",
-        "xbox/",
-        "xbox360/",
-        "xboxone/",
-        "xboxsx/"
-    ];
+        let links: string[] = [];
+
+        const url: string = 'http://wiki.redump.org/index.php?title=List_of_DB_Download_Links';
+
+        try {
+
+            const res: Response = await fetch(url);
+
+            if (res.ok) {
+
+                const htmlRaw: string = await res.text();
+                Array.from(htmlRaw.matchAll(/http:\/\/redump.org\/datfile\/[a-zA-Z0-9]+\//g)).forEach((match) => {
+                    if (links.indexOf(match[0]) === -1) links.push(match[0]);
+                });
+            }
+        } catch {
+            // @ts-ignore
+            const info: { file: string; content: string }[] = await window.electron.ipcRenderer.invoke('readDatDirectory', 'dat/redump', 'json');
+
+            info.forEach((el) => {
+                links.push(el.file.replace('.json', ''));
+            });
+        }
+
+        return links;
+    }
+
+    public static async getToken(): Promise<boolean> {
+        //@ts-ignore
+        Downloader.cookies = await window.electron.ipcRenderer.invoke('redumpLogin');
+
+        if (Downloader.cookies) {
+            log('Successfully logged in');
+            return true;
+        } else {
+            return false;
+        }
+    };
 
     public static async init(): Promise<void> {
 
@@ -199,14 +157,14 @@ class Downloader {
      */
     private static async redump(): Promise<void> {
 
-        Downloader.total = Downloader.pathURLs.length;
+        const urls: string[] = await Downloader.getPathURLs();
+        Downloader.total = urls.length;
         const folder: string = 'dat/redump';
 
         try {
-            for (const element of Downloader.pathURLs) {
+            for (const url of urls) {
 
-                const url = Downloader.baseURL + element;
-                const baseName: string = element.replace(/\/+$/, '');
+                const baseName: string = url.replace('http://redump.org/datfile/', '').replace(/\/+$/, '');
                 let datFileName: string = baseName + '.dat';
                 let jsonFileName: string = baseName + '.json';
 
@@ -243,7 +201,8 @@ class Downloader {
                                 log(`Failed to save DAT file from "${url}"`, 'error');
                             }
                         } else {
-                            Downloader.total--;
+                            log(`Failed to unzip DAT file from "${url}"`, 'error');
+                            log('It probably requires authentication and dumper status', 'error');
                         }
                     } else {
                         log(`Failed to fetch files from "${url}"`, 'error');
@@ -274,8 +233,14 @@ class Downloader {
      */
     private static async fetch(url: string): Promise<ArrayBuffer | undefined> {
         try {
-            const res: Response = await fetch(url);
-            if (res.ok) return await res.arrayBuffer();
+            if (Downloader.cookies) {
+                // @ts-ignore
+                const ab: ArrayBuffer = await window.electron.ipcRenderer.invoke('redumpCookieFetch', url, Downloader.cookies);
+                if (ab) return ab;
+            } else {
+                const res = await fetch(url);
+                if (res.ok) return await res.arrayBuffer();
+            }
         } catch (err: any) {
             console.error(err);
         }
@@ -295,7 +260,7 @@ class Downloader {
 
             if (datFileName) return await zip.files[datFileName].async('text');
         } catch (err: any) {
-            console.error(err);
+            if (!err.message.includes('is a zip')) console.error(err);
         }
     }
 

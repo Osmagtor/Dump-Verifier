@@ -3,6 +3,8 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as crypto from 'crypto';
 import { shell } from 'electron';
+import { execSync } from 'child_process';
+import fetch from 'node-fetch';
 
 if (require('electron-squirrel-startup')) app.quit();
 
@@ -28,6 +30,77 @@ if (process.platform === 'win32') {
 app.whenReady().then((): void => {
 
     createWindow();
+
+    ipcMain.handle('redumpCookieFetch', async (_, url: string, cookies: string): Promise<ArrayBuffer | null> => {
+        try {
+            const res = await fetch(url, {
+                headers: { Cookie: cookies }
+            });
+
+            if (res.ok) return await res.arrayBuffer();
+            else return null;
+        } catch (err: any) {
+            console.error(err);
+            return null;
+        }
+    });
+
+    ipcMain.handle('redumpLogin', async (): Promise<string> => {
+        return new Promise((resolve, reject) => {
+
+            const loginWin = new BrowserWindow({
+                width: 800,
+                height: 600,
+                modal: true,
+                webPreferences: {
+                    nodeIntegration: false,
+                    contextIsolation: true
+                }
+            });
+            loginWin.setMenuBarVisibility(false);
+            loginWin.loadURL('http://forum.redump.org/login/');
+
+            // Listening for cookies changes
+
+            const ses = loginWin.webContents.session;
+
+            const checkCookie = async () => {
+
+                const cookies = await ses.cookies.get({ url: 'http://forum.redump.org/' });
+                const cookieString = cookies
+                    .filter(c => c.name.toLowerCase().includes('redump'))
+                    .map(c => `${c.name}=${c.value}`)
+                    .join('; ');
+
+                // Only resolving if cookies contain a session/login cookie
+
+                if (cookieString.includes('redump')) {
+                    resolve(cookieString);
+                    loginWin.close();
+                }
+            };
+
+            // Periodically checking for the session cookie
+
+            const interval = setInterval(checkCookie, 1000);
+
+            // If the user closes the window without logging in
+
+            loginWin.on('closed', async () => {
+                
+                clearInterval(interval);
+                
+                // Clearing all cookies for the external link
+                const cookies = await ses.cookies.get({ url: 'http://forum.redump.org/' });
+
+                for (const cookie of cookies) {
+                    await ses.cookies.remove('http://forum.redump.org/', cookie.name);
+                }
+
+                resolve('');
+            });
+        });
+    });
 
     ipcMain.handle('getVersion', async (): Promise<string> => {
         return app.getVersion();
@@ -245,7 +318,7 @@ function createWindow(): void {
     });
 
     win.loadFile(path.join(app.getAppPath(), 'dist/html/index.html'));
-    // win.webContents.openDevTools();
+    win.webContents.openDevTools();
     win.setMenuBarVisibility(false);
 
     // Send accent color to renderer
