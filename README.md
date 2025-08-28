@@ -27,6 +27,9 @@ If you would like to use this app on a different Linux distribution and you are 
 The application consists of the following elements:
 
 * A button to select the game files to be verified.
+* A gray key icon to log into `redump.org` and access to the `DAT` files reserved to users with dumper status. To do this:
+  1. Click on the gray key icon. You will be taken to `forum.redump.org` to log in. If you have successfully logged in, the key will have turned yellow. This app does not store your credentials for security reasons so you will need to log in every time you open the app.
+  2. Click on the `Update Redump` button to download all files again.
 * A help symbol that will show a tooltip with some of the useful information detailed here when clicked on.
 * A drop-down menu to select the database (i.e., `redump` or `no-intro`) and platform (e.g., `PlayStation`, `Nintendo DS`, `Xbox 360`, etc.) combination that you would like your file(s) to be compared against. If you are only verifying games for a single platform, this will help the application save some time comparing hashes. If you are verifying games for multiple platforms leave the text in this drop-down menu empty.
 * Another drop-menu to select the specific game that you would like your file(s) to be compared against. If you are only verifying one game, this will help the application save some time comparing hashes. If you are verifying a multi-track PlayStation game, you want to set the drop-down menu to the specific game you would like to verify. The hash for the game file(s) will be produced by using the expected file size of the reference database game. This corresponds to the chunk of the game file containing the track with the game data.
