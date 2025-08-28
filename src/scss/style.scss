@@ -359,13 +359,17 @@ body {
         top: 10px;
         right: 50px;
 
-        width: 23px;
-        height: 23px;
+        width: 22px;
+        height: 22px;
         font-size: 20px;
 
         display: flex;
         justify-content: center;
         align-items: center;
+
+        background-image: url('../../img/key.svg');
+        background-size: contain;
+        background-repeat: no-repeat;
 
         filter: grayscale(1);
 

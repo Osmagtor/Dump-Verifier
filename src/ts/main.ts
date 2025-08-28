@@ -3,8 +3,6 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as crypto from 'crypto';
 import { shell } from 'electron';
-import { execSync } from 'child_process';
-import fetch from 'node-fetch';
 
 if (require('electron-squirrel-startup')) app.quit();
 
