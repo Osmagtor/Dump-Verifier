@@ -318,7 +318,6 @@ function createWindow(): void {
     });
 
     win.loadFile(path.join(app.getAppPath(), 'dist/html/index.html'));
-    win.webContents.openDevTools();
     win.setMenuBarVisibility(false);
 
     // Send accent color to renderer
