@@ -14,13 +14,15 @@ From the releases page of this repository, download the latest `Windows executab
 
 From the releases page of this repository, download the latest `compressed ZIP` file for your architecture (`ARM` or `x64`). Install the app by extracting it to the `Applications` folder.
 
-### 3. Debian based distributions
+### 3. Debian/Fedora based distributions
 
-From the releases page of this repository, download the latest `DEB` file for your architecture (`ARM` or `x64`). Install the app by navigating to the location of the downloaded file from a terminal and running `sudo apt install ./<package-name>`.
+From the releases page of this repository, download the latest `.deb`/`.rpm` file for your architecture (`ARM` or `x64`). Install the app by navigating to the location of the downloaded file from a terminal and running `sudo apt install ./<package-name>`/`sudo rpm -i <package-name>`.
 
 ### 4. Other Linux distributions
 
-If you would like to use this app on a different Linux distribution and you are familiar with Electron apps, clone this repository and modify the `package.json` to accommodate for your desired distribution. Then run `npm run make -- --arch=x64` or `npm run make -- --arch=arm64` from said distribution. You will find the built package under `./out/make`.
+If you would like to use this app on a different Linux distribution and you are familiar with Electron apps, clone this repository and modify the `package.json` to accommodate for your desired distribution. Then run `npm run watch` to generate all the `.css` and `.cjs`/`.js` files needed for compilation. That done, run `npm run make -- --arch=x64` or `npm run make -- --arch=arm64` from said distribution. You will find the built package under `./out/make`. 
+
+As of the time of writing these instructions (31st of January of 2026), `.rpm` distributables can't be reliably packaged using `electron-maker-rpm` on the latest versions of Fedora and RPM. It may be necessary to make the change described [here](https://github.com/electron/forge/issues/3701).
 
 ## How to use
 
