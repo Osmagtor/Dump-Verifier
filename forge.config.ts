@@ -11,7 +11,8 @@ const config: ForgeConfig = {
             "dat($|/)"
         ],
         name: "Dump Verifier",
-        executableName: "dump-verifier"
+        executableName: "dump-verifier",
+        icon: "img/icon"
     },
     makers: [
         new MakerSquirrel(
