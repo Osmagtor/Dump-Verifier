@@ -12,11 +12,12 @@
     "make": "electron-forge make",
     "publish": "electron-forge publish",
     "lint": "echo \"No linting configured\"",
-    "watch": "node esbuild.config.js"
+    "watch": "node --experimental-strip-types --no-warnings esbuild.config.ts"
   },
   "keywords": [],
   "dependencies": {
     "electron-squirrel-startup": "^1.0.1",
+    "esbuild-sass-plugin": "^3.6.0",
     "jquery": "^3.7.1",
     "js-confetti": "^0.12.0",
     "jszip": "^3.10.1",
@@ -26,6 +27,7 @@
   "devDependencies": {
     "@electron-forge/cli": "^7.8.2",
     "@electron-forge/maker-deb": "^7.8.2",
+    "@electron-forge/maker-flatpak": "^7.11.1",
     "@electron-forge/maker-rpm": "^7.11.1",
     "@electron-forge/maker-squirrel": "^7.8.2",
     "@electron-forge/maker-zip": "^7.8.2",
@@ -35,61 +37,6 @@
     "@types/jquery": "^3.5.32",
     "@types/tippy.js": "^6.3.0",
     "electron": "^37.10.3",
-    "esbuild": "^0.25.8"
-  },
-  "config": {
-    "forge": {
-      "packagerConfig": {
-        "ignore": [
-          "dat($|/)"
-        ],
-        "files": [
-          "dist/**/*",
-          "img/*"
-        ],
-        "name": "Dump Verifier",
-        "icon": "img/icon.icns",
-        "executableName": "dump-verifier"
-      },
-      "makers": [
-        {
-          "name": "@electron-forge/maker-squirrel",
-          "platforms": [
-            "win32"
-          ],
-          "config": {
-            "icon": "img/icon.ico",
-            "setupIcon": "img/icon.ico"
-          }
-        },
-        {
-          "name": "@electron-forge/maker-zip",
-          "platforms": [
-            "darwin"
-          ],
-          "config": {
-            "icon": "img/icon.icns"
-          }
-        },
-        {
-          "name": "@electron-forge/maker-deb",
-          "platforms": [
-            "linux"
-          ],
-          "config": {
-            "icon": "img/icon.ico"
-          }
-        },
-        {
-          "name": "@electron-forge/maker-rpm",
-          "platforms": [
-            "linux"
-          ],
-          "config": {
-            "icon": "img/icon.ico"
-          }
-        }
-      ]
-    }
+    "esbuild": "^0.27.2"
   }
 }
