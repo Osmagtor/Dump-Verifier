@@ -27,18 +27,47 @@ const config: ForgeConfig = {
             ["darwin"]
         ),
         new MakerDeb(
-            {},
+            {
+                options: {
+                    name: "dump-verifier",
+                    productName: "Dump Verifier",
+                    genericName: "Hash Verifier for Game Dumps",
+                    description: "A tool to verify game dumps using the redump.org and no-intro.org databases.",
+                    productDescription: "A tool to verify game dumps using the redump.org and no-intro.org databases.",
+                    version: "1.2.0",
+                    icon: "img/icon.ico",
+                    categories: [
+                        "Utility"
+                    ],
+                    homepage: "https://github.com/Osmagtor/Dump-Verifier",
+                }
+            },
             ["linux"]
         ),
         new MakerRpm(
-            {},
+            {
+                options: {
+                    name: "dump-verifier",
+                    productName: "Dump Verifier",
+                    genericName: "Hash Verifier for Game Dumps",
+                    description: "A tool to verify game dumps using the redump.org and no-intro.org databases.",
+                    productDescription: "A tool to verify game dumps using the redump.org and no-intro.org databases.",
+                    version: "1.2.0",
+                    license: "Apache-2.0",
+                    icon: "img/icon.ico",
+                    categories: [
+                        "Utility"
+                    ],
+                    homepage: "https://github.com/Osmagtor/Dump-Verifier",
+                }
+            },
             ["linux"]
         ),
         new MakerFlatpak(
             {
                 options: {
                     id: "org.dumpverifier.app",
-                    icon: "img/icon.png",
+                    icon: "img/icon.ico",
                     productName: "Dump Verifier",
                     genericName: "Hash Verifier for Game Dumps",
                     description: "A tool to verify game dumps using the redump.org and no-intro.org databases.",
@@ -51,7 +80,7 @@ const config: ForgeConfig = {
                         ["dist/js/renderer.js", "dist/js/renderer.js"],
                         ["dist/html/index.html", "dist/html/index.html"],
                         ["dist/css/style.css", "dist/css/style.css"],
-                        ["img/icon.png", "img/icon.png"]
+                        ["img/icon.ico", "img/icon.ico"]
                     ],
                 }
             },
