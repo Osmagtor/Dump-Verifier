@@ -31,6 +31,9 @@ jobs:
         with:
           node-version: 24
 
+      - name: Set environment variable for Node.js 24
+        run: echo "FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true" >> $GITHUB_ENV
+
       - name: Cache Node.js dependencies
         uses: actions/cache@v3
         with:
@@ -78,6 +81,9 @@ jobs:
         with:
           node-version: 24
 
+      - name: Set environment variable for Node.js 24
+        run: echo "FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true" >> $GITHUB_ENV
+
       - name: Cache Node.js dependencies
         uses: actions/cache@v3
         with:
@@ -119,6 +125,9 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: 24
+
+      - name: Set environment variable for Node.js 24
+        run: echo "FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true" >> $GITHUB_ENV
 
       - name: Cache Node.js dependencies
         uses: actions/cache@v3
@@ -174,14 +183,15 @@ jobs:
           echo "EOF" >> $GITHUB_ENV
 
       - name: Create Release
-        uses: actions/create-release@v1
+        uses: actions/create-release@v1.1.0
         with:
           tag_name: v${{ env.version }}
           release_name: Release v${{ env.version }}
           body: ${{ env.changelog }}
           draft: false
           prerelease: false
-          token: ${{ secrets.GITHUB_TOKEN }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload Linux Artifacts
         uses: actions/upload-release-asset@v1
