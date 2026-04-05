@@ -1,10 +1,17 @@
-import { app, BrowserWindow, ipcMain, dialog, nativeTheme } from 'electron';
+import {
+	app,
+	BrowserWindow,
+	ipcMain,
+	dialog,
+	nativeTheme,
+	IpcMainInvokeEvent,
+	Cookie,
+	Session,
+} from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as crypto from 'crypto';
 import { shell } from 'electron';
-
-if (require('electron-squirrel-startup')) app.quit();
 
 let win: BrowserWindow | null = null;
 let baseDir: string;
@@ -12,322 +19,424 @@ let width: number;
 let height: number;
 
 if (process.platform === 'win32') {
-    baseDir = process.cwd();
-    width = 600;
-    height = 560;
+	baseDir = process.cwd();
+	width = 600;
+	height = 560;
 } else if (process.platform === 'darwin') {
-    baseDir = app.getPath('userData');
-    width = 585;
-    height = 545;
+	baseDir = app.getPath('userData');
+	width = 585;
+	height = 545;
 } else {
-    baseDir = app.getPath('userData');
-    width = 585;
-    height = 490;
+	baseDir = app.getPath('userData');
+	width = 585;
+	height = 490;
 }
 
-app.whenReady().then((): void => {
+void app.whenReady().then((): void => {
+	createWindow();
 
-    createWindow();
+	ipcMain.handle(
+		'redumpCookieFetch',
+		async (
+			_: IpcMainInvokeEvent,
+			url: string,
+			cookies: string,
+		): Promise<ArrayBuffer | null> => {
+			try {
+				const res: Response = await fetch(url, {
+					headers: { Cookie: cookies },
+				});
 
-    ipcMain.handle('redumpCookieFetch', async (_, url: string, cookies: string): Promise<ArrayBuffer | null> => {
-        try {
-            const res = await fetch(url, {
-                headers: { Cookie: cookies }
-            });
+				if (res.ok) return await res.arrayBuffer();
+				else return null;
+			} catch (err: any) {
+				console.error(err);
+				return null;
+			}
+		},
+	);
 
-            if (res.ok) return await res.arrayBuffer();
-            else return null;
-        } catch (err: any) {
-            console.error(err);
-            return null;
-        }
-    });
+	ipcMain.handle('redumpLogin', async (): Promise<string> => {
+		return new Promise((resolve: (result: string) => void): void => {
+			const loginWin: BrowserWindow = new BrowserWindow({
+				width: 800,
+				height: 600,
+				modal: true,
+				webPreferences: {
+					nodeIntegration: false,
+					contextIsolation: true,
+				},
+			});
 
-    ipcMain.handle('redumpLogin', async (): Promise<string> => {
-        return new Promise((resolve, reject) => {
+			loginWin.setMenuBarVisibility(false);
+			void loginWin.loadURL('http://forum.redump.org/login/');
 
-            const loginWin = new BrowserWindow({
-                width: 800,
-                height: 600,
-                modal: true,
-                webPreferences: {
-                    nodeIntegration: false,
-                    contextIsolation: true
-                }
-            });
-            loginWin.setMenuBarVisibility(false);
-            loginWin.loadURL('http://forum.redump.org/login/');
+			// Listening for cookies changes
 
-            // Listening for cookies changes
+			const ses: Session = loginWin.webContents.session;
 
-            const ses = loginWin.webContents.session;
+			/**
+			 * Helper function to check for the presence of the session cookie and resolve the promise if found
+			 */
+			const checkCookie: () => Promise<void> = async (): Promise<void> => {
+				const cookies: Cookie[] = await ses.cookies.get({
+					url: 'http://forum.redump.org/',
+				});
+				const cookieString: string = cookies
+					.filter((c: Cookie): boolean =>
+						c.name.toLowerCase().includes('redump'),
+					)
+					.map((c: Cookie): string => `${c.name}=${c.value}`)
+					.join('; ');
 
-            const checkCookie = async () => {
+				// Only resolving if cookies contain a session/login cookie
 
-                const cookies = await ses.cookies.get({ url: 'http://forum.redump.org/' });
-                const cookieString = cookies
-                    .filter(c => c.name.toLowerCase().includes('redump'))
-                    .map(c => `${c.name}=${c.value}`)
-                    .join('; ');
+				if (cookieString.includes('redump')) {
+					resolve(cookieString);
+					loginWin.close();
+				}
+			};
 
-                // Only resolving if cookies contain a session/login cookie
+			// Periodically checking for the session cookie
 
-                if (cookieString.includes('redump')) {
-                    resolve(cookieString);
-                    loginWin.close();
-                }
-            };
+			const interval: NodeJS.Timeout = setInterval(checkCookie, 1000);
 
-            // Periodically checking for the session cookie
+			// If the user closes the window without logging in
 
-            const interval = setInterval(checkCookie, 1000);
+			loginWin.on('closed', async (): Promise<void> => {
+				clearInterval(interval);
 
-            // If the user closes the window without logging in
+				// Clearing all cookies for the external link
+				const cookies: Cookie[] = await ses.cookies.get({
+					url: 'http://forum.redump.org/',
+				});
 
-            loginWin.on('closed', async () => {
-                
-                clearInterval(interval);
-                
-                // Clearing all cookies for the external link
-                const cookies = await ses.cookies.get({ url: 'http://forum.redump.org/' });
+				for (const cookie of cookies) {
+					await ses.cookies.remove('http://forum.redump.org/', cookie.name);
+				}
 
-                for (const cookie of cookies) {
-                    await ses.cookies.remove('http://forum.redump.org/', cookie.name);
-                }
+				resolve('');
+			});
+		});
+	});
 
-                resolve('');
-            });
-        });
-    });
+	ipcMain.handle('getVersion', (): string => {
+		return app.getVersion();
+	});
 
-    ipcMain.handle('getVersion', async (): Promise<string> => {
-        return app.getVersion();
-    });
+	ipcMain.handle('createDat', (): void => {
+		try {
+			const folderRedump: string = path.join(baseDir, 'dat/redump');
+			const folderNointro: string = path.join(baseDir, 'dat/no-intro');
 
-    ipcMain.handle('createDat', async (): Promise<void> => {
-        try {
-            const folderRedump: string = path.join(baseDir, 'dat/redump');
-            const folderNointro: string = path.join(baseDir, 'dat/no-intro');
+			if (!fs.existsSync(folderRedump))
+				fs.mkdirSync(folderRedump, { recursive: true });
+			if (!fs.existsSync(folderNointro))
+				fs.mkdirSync(folderNointro, { recursive: true });
+		} catch (err: any) {
+			console.error(err);
+		}
+	});
 
-            if (!fs.existsSync(folderRedump)) fs.mkdirSync(folderRedump, { recursive: true });
-            if (!fs.existsSync(folderNointro)) fs.mkdirSync(folderNointro, { recursive: true });
-        } catch (err: any) {
-            console.error(err);
-        }
-    });
+	ipcMain.handle(
+		'checkFile',
+		(
+			_: IpcMainInvokeEvent,
+			datFileName: string,
+			datFolder: string,
+		): boolean => {
+			try {
+				const filePath: string = path.join(baseDir, datFolder, datFileName);
+				return fs.existsSync(filePath);
+			} catch (err: any) {
+				console.error(err);
+				return false;
+			}
+		},
+	);
 
-    ipcMain.handle('checkFile', async (_, datFileName, datFolder): Promise<boolean> => {
-        try {
-            const filePath: string = path.join(baseDir, datFolder, datFileName);
-            return fs.existsSync(filePath);
-        } catch (err: any) {
-            console.error(err);
-            return false;
-        }
-    });
+	ipcMain.handle(
+		'readDatFile',
+		(
+			_: IpcMainInvokeEvent,
+			datFileName: string,
+			datFolder: string,
+		): string | null => {
+			try {
+				const filePath: string = path.join(baseDir, datFolder, datFileName);
+				return fs.readFileSync(filePath, 'utf-8');
+			} catch (err: any) {
+				console.error(err);
+				return null;
+			}
+		},
+	);
 
-    ipcMain.handle('readDatFile', async (_, datFileName, datFolder): Promise<string | null> => {
-        try {
-            const filePath: string = path.join(baseDir, datFolder, datFileName);
-            return fs.readFileSync(filePath, 'utf-8');
-        } catch (err: any) {
-            console.error(err);
-            return null;
-        }
-    });
+	ipcMain.handle(
+		'readDatFileExternal',
+		(_: IpcMainInvokeEvent, datFilePath: string): Buffer | null => {
+			try {
+				return fs.readFileSync(datFilePath);
+			} catch (err: any) {
+				console.error(err);
+				return null;
+			}
+		},
+	);
 
-    ipcMain.handle('readDatFileExternal', async (_, datFilePath): Promise<Buffer | null> => {
-        try {
-            return fs.readFileSync(datFilePath);
-        } catch (err: any) {
-            console.error(err);
-            return null;
-        }
-    });
+	ipcMain.handle(
+		'deleteDatFile',
+		(
+			_: IpcMainInvokeEvent,
+			datFileName: string,
+			datFolder: string,
+		): boolean => {
+			try {
+				const filePath: string = path.join(baseDir, datFolder, datFileName);
+				fs.unlinkSync(filePath);
+				return true;
+			} catch (err: any) {
+				console.error(err);
+				return false;
+			}
+		},
+	);
 
-    ipcMain.handle('deleteDatFile', async (_, datFileName, datFolder): Promise<boolean> => {
-        try {
-            const filePath: string = path.join(baseDir, datFolder, datFileName);
-            fs.unlinkSync(filePath);
-            return true;
-        } catch (err: any) {
-            console.error(err);
-            return false;
-        }
-    });
+	ipcMain.handle(
+		'readDatDirectory',
+		(
+			_: IpcMainInvokeEvent,
+			datFolder: string,
+			ext: string,
+		): { file: string; content: string }[] => {
+			try {
+				const dirPath: string = path.join(baseDir, datFolder);
+				const files: string[] = fs.readdirSync(dirPath);
+				const filesFound: string[] = files.filter((file: string): boolean =>
+					file.endsWith(ext),
+				);
 
-    ipcMain.handle('readDatDirectory', async (_, datFolder, ext): Promise<{ file: string; content: string }[]> => {
-        try {
-            const dirPath: string = path.join(baseDir, datFolder);
-            const files = fs.readdirSync(dirPath);
-            const filesFound = files.filter(file => file.endsWith(ext));
+				return filesFound.map(
+					(file: string): { file: string; content: string } => {
+						const filePath: string = path.join(dirPath, file);
+						return {
+							file: file,
+							content: fs.readFileSync(filePath, 'utf-8'),
+						};
+					},
+				);
+			} catch (err: any) {
+				console.error(err);
+				return [];
+			}
+		},
+	);
 
-            return filesFound.map(file => {
-                const filePath = path.join(dirPath, file);
-                return {
-                    file: file,
-                    content: fs.readFileSync(filePath, 'utf-8')
-                }
-            });
-        } catch (err: any) {
-            console.error(err);
-            return [];
-        }
-    });
+	ipcMain.handle(
+		'deleteDatDirectoryContents',
+		(_: IpcMainInvokeEvent, datFolder: string): boolean => {
+			try {
+				const dirPath: string = path.join(baseDir, datFolder);
 
-    ipcMain.handle('deleteDatDirectoryContents', async (_, datFolder): Promise<boolean> => {
-        try {
-            const dirPath: string = path.join(baseDir, datFolder);
+				if (fs.existsSync(dirPath)) {
+					const files: string[] = fs.readdirSync(dirPath);
 
-            if (fs.existsSync(dirPath)) {
+					for (const file of files) {
+						const filePath: string = path.join(dirPath, file);
 
-                const files = fs.readdirSync(dirPath);
+						if (fs.lstatSync(filePath).isFile()) {
+							fs.unlinkSync(filePath);
+						}
+					}
+				}
+				return true;
+			} catch (err: any) {
+				console.error(err);
+				return false;
+			}
+		},
+	);
 
-                for (const file of files) {
+	ipcMain.handle(
+		'saveDatFile',
+		(
+			_: IpcMainInvokeEvent,
+			datFileName: string,
+			datFolder: string,
+			text: string,
+		): boolean => {
+			try {
+				const folderPath: string = path.join(baseDir, datFolder);
+				const filePath: string = path.join(folderPath, datFileName);
 
-                    const filePath = path.join(dirPath, file);
+				fs.mkdirSync(folderPath, { recursive: true });
+				fs.writeFileSync(filePath, text, 'utf-8');
 
-                    if (fs.lstatSync(filePath).isFile()) {
-                        fs.unlinkSync(filePath);
-                    }
-                }
-            }
-            return true;
-        } catch (err: any) {
-            console.error(err);
-            return false;
-        }
-    });
+				return true;
+			} catch (err: any) {
+				console.error(err);
+				return false;
+			}
+		},
+	);
 
-    ipcMain.handle('saveDatFile', async (_, datFileName, datFolder, text): Promise<boolean> => {
-        try {
-            const folderPath: string = path.join(baseDir, datFolder);
-            const filePath: string = path.join(folderPath, datFileName);
+	ipcMain.handle(
+		'openFile',
+		async (_: IpcMainInvokeEvent, exts: string[]): Promise<string[] | null> => {
+			const {
+				canceled,
+				filePaths,
+			}: { canceled: boolean; filePaths: string[] } =
+				await dialog.showOpenDialog({
+					properties: ['openFile', 'multiSelections'],
+					filters: [
+						exts?.length
+							? { name: 'Files', extensions: exts }
+							: { name: 'All Files', extensions: ['*'] },
+					],
+				});
 
-            fs.mkdirSync(folderPath, { recursive: true });
-            fs.writeFileSync(filePath, text, 'utf-8');
+			if (canceled) return null;
+			else return filePaths;
+		},
+	);
 
-            return true;
-        } catch (err: any) {
-            console.error(err);
-            return false;
-        }
-    });
+	ipcMain.handle(
+		'basename',
+		(_: IpcMainInvokeEvent, filePath: string): string => {
+			return path.basename(filePath);
+		},
+	);
 
-    ipcMain.handle('openFile', async (_, exts: string[]): Promise<string[] | null> => {
+	ipcMain.handle(
+		'hash',
+		async (
+			_: IpcMainInvokeEvent,
+			filepath: string,
+			start: number = 0,
+			end: number,
+		): Promise<string | null> => {
+			try {
+				return await new Promise(
+					(
+						resolve: (value: string) => void,
+						reject: (reason?: any) => void,
+					): void => {
+						let percentageOld: string = '';
+						let bytesRead: number = 0;
 
-        const { canceled, filePaths } = await dialog.showOpenDialog({
-            properties: ['openFile', 'multiSelections'],
-            filters: [
-                exts?.length
-                    ? { name: 'Files', extensions: exts }
-                    : { name: 'All Files', extensions: ['*'] }
-            ]
-        });
+						const bytesTotal: number =
+							(end ?? fs.statSync(filepath).size) - start + 1;
+						const hash: crypto.Hash = crypto.createHash('sha1');
+						const stream: fs.ReadStream = fs.createReadStream(filepath, {
+							start,
+							end,
+						});
 
-        if (canceled) return null;
-        else return filePaths;
-    });
+						stream.on('error', (err: Error): void => {
+							reject(err);
+						});
 
-    ipcMain.handle('basename', async (_, filePath: string): Promise<string> => {
-        return path.basename(filePath);
-    });
+						hash.on('error', (err: Error): void => {
+							reject(err);
+						});
 
-    ipcMain.handle('hash', async (_, filepath: string, start: number = 0, end: number): Promise<string | null> => {
-        try {
-            return await new Promise((resolve, reject) => {
+						stream.on('data', (chunk: string | Buffer): void => {
+							hash.update(chunk);
+							bytesRead += chunk.length;
 
-                let percentageOld: string = '';
-                let bytesRead: number = 0;
-                const bytesTotal: number = (end === undefined ? fs.statSync(filepath).size : end) - start + 1;
-                const hash = crypto.createHash('sha1');
-                const stream = fs.createReadStream(filepath, { start, end });
+							const percentage: string = Number(
+								(bytesRead / bytesTotal) * 100,
+							).toFixed(0);
 
-                stream.on('error', err => reject(err));
-                hash.on('error', err => reject(err));
+							// Emitting a progress event
 
-                stream.on('data', (chunk) => {
+							if (win && percentage !== percentageOld) {
+								percentageOld = percentage;
+								win.webContents.send('progress', percentage);
+							}
+						});
 
-                    hash.update(chunk);
-                    bytesRead += chunk.length;
+						stream.on('end', (): void => {
+							const finalHash: string = hash.digest('hex');
+							resolve(finalHash);
+						});
+					},
+				);
+			} catch (err: any) {
+				console.error(err);
+				return null;
+			}
+		},
+	);
 
-                    const percentage = Number((bytesRead / bytesTotal) * 100).toFixed(0);
+	ipcMain.handle(
+		'openExternal',
+		async (_: IpcMainInvokeEvent, url: string): Promise<void> => {
+			try {
+				await shell.openExternal(url);
+			} catch (err: any) {
+				console.error('Failed to open external URL:', err);
+			}
+		},
+	);
 
-                    // Emitting a progress event
-
-                    if (win && percentage !== percentageOld) {
-                        percentageOld = percentage;
-                        win.webContents.send('progress', percentage);
-                    }
-                });
-
-                stream.on('end', () => {
-                    const finalHash = hash.digest('hex');
-                    resolve(finalHash);
-                });
-            });
-        } catch (err: any) {
-            console.error(err);
-            return null;
-        }
-    });
-
-    ipcMain.handle('openExternal', async (_, url: string): Promise<void> => {
-        try {
-            await shell.openExternal(url);
-        } catch (err: any) {
-            console.error('Failed to open external URL:', err);
-        }
-    });
-
-    app.on('activate', () => {
-        if (BrowserWindow.getAllWindows().length === 0) {
-            createWindow();
-        }
-    });
+	app.on('activate', (): void => {
+		if (BrowserWindow.getAllWindows().length === 0) {
+			createWindow();
+		}
+	});
 });
 
 app.on('window-all-closed', (): void => {
-    if (process.platform !== 'darwin') {
-        app.quit();
-    }
+	if (process.platform !== 'darwin') {
+		app.quit();
+	}
 });
 
 // FUNCTIONS
 
-function getTheme(): string {
-    return nativeTheme.shouldUseDarkColors ? 'dark' : 'light';
+/**
+ * Gets the current theme (dark or light) based on the user's system preferences using Electron's nativeTheme API.
+ * @returns {'dark' | 'light'} The current theme, either 'dark' or 'light'.
+ */
+function getTheme(): 'dark' | 'light' {
+	return nativeTheme.shouldUseDarkColors ? 'dark' : 'light';
 }
 
+/**
+ * Creates the main application window and sets up event listeners for theme changes and communication with the renderer process.
+ */
 function createWindow(): void {
+	const icon: string = path.join(app.getAppPath(), 'img/icon.ico');
 
-    const icon: string = path.join(app.getAppPath(), 'img/icon.ico');
+	win = new BrowserWindow({
+		width: width,
+		height: height,
+		resizable: false,
+		icon: icon,
+		webPreferences: {
+			preload: path.join(app.getAppPath(), 'dist/js/preload.cjs'),
+			contextIsolation: true,
+			nodeIntegration: false,
+		},
+	});
 
-    win = new BrowserWindow({
-        width: width,
-        height: height,
-        resizable: false,
-        icon: icon,
-        webPreferences: {
-            preload: path.join(app.getAppPath(), 'dist/js/preload.cjs'),
-            contextIsolation: true,
-            nodeIntegration: false
-        }
-    });
+	void win.loadFile(path.join(app.getAppPath(), 'dist/html/index.html'));
+	win.setMenuBarVisibility(false);
 
-    win.loadFile(path.join(app.getAppPath(), 'dist/html/index.html'));
-    win.setMenuBarVisibility(false);
+	// Send accent color to renderer
+	win.webContents.on('did-finish-load', (): void => {
+		/**
+		 * Callback function to send the current theme to the renderer process
+		 */
+		const callbackTheme: () => void = (): void => {
+			const theme: 'dark' | 'light' = getTheme();
+			if (win) win.webContents.send('theme', theme);
+		};
 
-    // Send accent color to renderer
-    win.webContents.on('did-finish-load', () => {
+		if (win) nativeTheme.on('updated', callbackTheme);
 
-        const callbackTheme = (): void => {
-            const theme = getTheme();
-            if (win) win.webContents.send('theme', theme);
-        }
-
-        if (win) nativeTheme.on('updated', callbackTheme);
-
-        callbackTheme();
-    });
+		callbackTheme();
+	});
 }

@@ -1,16 +1,42 @@
-import { contextBridge, ipcRenderer } from 'electron';
+import {
+	contextBridge,
+	IpcRenderer,
+	ipcRenderer,
+	IpcRendererEvent,
+} from 'electron';
 
 contextBridge.exposeInMainWorld('electron', {
-    ipcRenderer: {
-        // @ts-ignore
-        invoke: (...args) => ipcRenderer.invoke(...args),
-        // Add a generic event listener
-        on: (channel: string, listener: (...args: any[]) => void) => ipcRenderer.on(channel, listener),
-    },
-    onAccentColor: (callback: any) => {
-        ipcRenderer.on('accent-color', (_, color: string) => callback(color));
-    },
-    onTheme: (callback: any) => {
-        ipcRenderer.on('theme', (_, theme: string) => callback(theme));
-    }
+	ipcRenderer: {
+		/**
+		 * Handler for invoking IPC events. The function will return a promise that resolves with the result of the invoked event.
+		 * @param {any[]} args The arguments to be passed to the invoked event.
+		 */
+		// @ts-expect-error Not being resolved by TypeScript
+		invoke: (...args: any[]): any[] => ipcRenderer.invoke(...args),
+		/**
+		 * Handler for IPC events. The listener will be called with the event and any additional arguments whenever the specified channel receives an event.
+		 * @param {string} channel The name of the IPC channel to listen to.
+		 * @param {(...args: any[]) => void} listener The function to call when an event is received.
+		 */
+		on: (channel: string, listener: (...args: any[]) => void): IpcRenderer =>
+			ipcRenderer.on(channel, listener),
+	},
+	/**
+	 * Handler for accent color changes. The callback will be called with the new accent color as an argument whenever the accent color changes.
+	 * @param {any} callback The callback function to be called when the accent color changes.
+	 */
+	onAccentColor: (callback: any): void => {
+		ipcRenderer.on('accent-color', (_: IpcRendererEvent, color: string): any =>
+			callback(color),
+		);
+	},
+	/**
+	 * Handler for theme changes. The callback will be called with the new theme as an argument whenever the theme changes.
+	 * @param {any} callback The callback function to be called when the theme changes.
+	 */
+	onTheme: (callback: any): void => {
+		ipcRenderer.on('theme', (_: IpcRendererEvent, theme: string): any =>
+			callback(theme),
+		);
+	},
 });

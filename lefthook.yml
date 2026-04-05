@@ -1,0 +1,6 @@
+pre-commit:
+  piped: true
+  jobs:
+    - name: Format changed files with Prettier
+      run: npx prettier --write {staged_files}
+      stage_fixed: true
