@@ -18,46 +18,51 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  check-version:
-    name: Check Version Number
+  version-check:
+    name: Check version number
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout only versioned files
         uses: actions/checkout@v4
         with:
+          fetch-depth: 0
+          ref: ${{ github.head_ref }}
           sparse-checkout: |
             package.json
+            changelog.md
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: 24
-
-      - name: Get current version from package.json
-        id: get_current_version
+      - name: Fetch main branch
         run: |
-          current_version=$(node -p "require('./package.json').version")
-          echo "current_version=$current_version" >> $GITHUB_ENV
+          git fetch origin main:refs/remotes/origin/main
 
-      - name: Get latest release version
-        id: get_latest_version
+      - name: Check version consistency
         run: |
-          latest_version=$(gh release view --json tagName -q '.tagName' || echo "0.0.0")
-          echo "latest_version=${latest_version#v}" >> $GITHUB_ENV
+          # Fetch main branch for base commit comparison
+          git fetch origin main:refs/remotes/origin/main
 
-      - name: Compare versions
-        id: compare_versions
-        run: |
-          if [ "$(printf "%s\n" "$latest_version" "$current_version" | sort -V | head -n1)" = "$current_version" ] && [ "$latest_version" != "$current_version" ]; then
-            echo "::error::Version number in package.json ($current_version) must be greater than the latest release version ($latest_version)."
+          # Get base commit (common ancestor with main)
+          BASE_COMMIT=$(git merge-base HEAD origin/main)
+
+          # Get versions
+          NEW_VERSION=$(grep '"version"' package.json | head -1 | sed -E 's/.*"version":\s*"([^"]+)".*/\1/')
+          OLD_VERSION=$(git show $BASE_COMMIT:package.json | grep '"version"' | head -1 | sed -E 's/.*"version":\s*"([^"]+)".*/\1/')
+
+          if [[ "$NEW_VERSION" == "$OLD_VERSION" ]]; then
+            echo "❌ Version number in package.json has not been increased."
             exit 1
           fi
 
-      - name: Check if changelog includes current version
-        id: check_changelog
-        run: |
-          if ! grep -q "# v${{ env.current_version }}" changelog.md; then
-            echo "::error::Changelog does not include the current version (${current_version})."
+          # Check related files
+          if ! git diff --name-only $BASE_COMMIT HEAD | grep -q '^changelog.md$'; then
+            echo "❌ changelog.md must be updated when version changes."
             exit 1
           fi
+
+          if ! grep -q "$NEW_VERSION" changelog.md; then
+            echo "❌ changelog.md does not contain version $NEW_VERSION"
+            exit 1
+          fi
+
+          echo "Old version: $OLD_VERSION / New version: $NEW_VERSION"
+          echo "✅ Version $NEW_VERSION is consistent across all files"

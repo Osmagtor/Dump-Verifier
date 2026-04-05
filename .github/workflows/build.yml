@@ -56,7 +56,7 @@ jobs:
         run: npm run make -- --arch=${{ matrix.architecture }}
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: dump-verifier-linux-${{ matrix.architecture }}
           path: out/make
@@ -98,7 +98,7 @@ jobs:
         run: npm run make -- --arch=${{ matrix.architecture }}
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: dump-verifier-macos-${{ matrix.architecture }}
           path: out/make
@@ -140,7 +140,7 @@ jobs:
         run: npm run make -- --arch=${{ matrix.architecture }}
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: dump-verifier-windows-${{ matrix.architecture }}
           path: out/make
@@ -181,6 +181,7 @@ jobs:
           body: ${{ env.changelog }}
           draft: false
           prerelease: false
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload Linux Artifacts
         uses: actions/upload-release-asset@v1
