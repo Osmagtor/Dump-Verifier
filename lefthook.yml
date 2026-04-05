@@ -1,6 +1,12 @@
 pre-commit:
   piped: true
   jobs:
+    - name: Check files with ESLint
+      run: npx eslint src/ts/*.ts
+
+    - name: Check that files can be built
+      run: npm run build
+
     - name: Format changed files with Prettier
       run: npx prettier --write {staged_files}
       stage_fixed: true

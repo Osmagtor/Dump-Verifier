@@ -12,8 +12,7 @@
 		"make": "electron-forge make",
 		"publish": "electron-forge publish",
 		"watch": "node --no-warnings --experimental-strip-types esbuild.config.ts watch",
-		"build": "node --no-warnings --experimental-strip-types esbuild.config.ts build",
-		"prepare": "npx lefthook install"
+		"build": "node --no-warnings --experimental-strip-types esbuild.config.ts build"
 	},
 	"keywords": [],
 	"dependencies": {
