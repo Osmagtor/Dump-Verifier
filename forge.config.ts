@@ -31,7 +31,7 @@ const config: ForgeConfig = {
 						'A tool to verify game dumps using the redump.org and no-intro.org databases.',
 					productDescription:
 						'A tool to verify game dumps using the redump.org and no-intro.org databases.',
-					version: '1.2.0',
+					version: '1.2.1',
 					icon: 'img/icon.ico',
 					categories: ['Utility'],
 					homepage: 'https://github.com/Osmagtor/Dump-Verifier',
@@ -49,7 +49,7 @@ const config: ForgeConfig = {
 						'A tool to verify game dumps using the redump.org and no-intro.org databases.',
 					productDescription:
 						'A tool to verify game dumps using the redump.org and no-intro.org databases.',
-					version: '1.2.0',
+					version: '1.2.1',
 					license: 'Apache-2.0',
 					icon: 'img/icon.ico',
 					categories: ['Utility'],
