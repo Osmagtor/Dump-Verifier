@@ -183,16 +183,13 @@ jobs:
           echo "$changelog" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
 
-      - name: Create Release
-        uses: actions/create-release@v1
+      - name: Create a Release
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ env.version }}
-          release_name: Release v${{ env.version }}
+          token: ${{ secrets.GITHUB_TOKEN }}
           body: ${{ env.changelog }}
-          draft: false
-          prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          name: v${{ env.version }}
 
       - name: Upload Linux Artifacts
         uses: actions/upload-release-asset@v1
@@ -220,3 +217,4 @@ jobs:
 
 permissions:
   contents: write
+  packages: write
