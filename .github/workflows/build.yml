@@ -24,7 +24,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Node.js
         uses: actions/setup-node@v6
@@ -35,7 +35,7 @@ jobs:
         run: echo "FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true" >> $GITHUB_ENV
 
       - name: Cache Node.js dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: /node_modules
           key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
@@ -49,6 +49,7 @@ jobs:
 
       - name: Install required packages for deb and rpm
         run: |
+          sudo add-apt-repository universe
           sudo apt-get update
           sudo apt-get install -y dpkg-dev fakeroot build-essential rpm rpm-build
 
@@ -59,7 +60,7 @@ jobs:
         run: npm run make -- --arch=${{ matrix.architecture }}
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: dump-verifier-linux-${{ matrix.architecture }}
           path: out/make
@@ -74,7 +75,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Node.js
         uses: actions/setup-node@v6
@@ -85,7 +86,7 @@ jobs:
         run: echo "FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true" >> $GITHUB_ENV
 
       - name: Cache Node.js dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: /node_modules
           key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
@@ -104,7 +105,7 @@ jobs:
         run: npm run make -- --arch=${{ matrix.architecture }}
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: dump-verifier-macos-${{ matrix.architecture }}
           path: out/make
@@ -119,7 +120,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Node.js
         uses: actions/setup-node@v6
@@ -130,7 +131,7 @@ jobs:
         run: echo "FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true" >> $GITHUB_ENV
 
       - name: Cache Node.js dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: /node_modules
           key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
@@ -149,7 +150,7 @@ jobs:
         run: npm run make -- --arch=${{ matrix.architecture }}
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: dump-verifier-windows-${{ matrix.architecture }}
           path: out/make
@@ -160,7 +161,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Node.js
         uses: actions/setup-node@v6
@@ -183,7 +184,7 @@ jobs:
           echo "EOF" >> $GITHUB_ENV
 
       - name: Create Release
-        uses: actions/create-release@v1.1.0
+        uses: actions/create-release@v1.2.0
         with:
           tag_name: v${{ env.version }}
           release_name: Release v${{ env.version }}

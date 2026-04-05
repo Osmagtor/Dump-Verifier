@@ -28,7 +28,7 @@ jobs:
         run: echo "FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true" >> $GITHUB_ENV
 
       - name: Checkout only relevant files
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           sparse-checkout: |
             src/ts/
@@ -41,7 +41,7 @@ jobs:
           node-version: 24
 
       - name: Cache Node.js dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: /node_modules
           key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
