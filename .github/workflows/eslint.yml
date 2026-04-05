@@ -32,9 +32,7 @@ jobs:
         with:
           sparse-checkout: |
             src/ts/
-            esbuild.config.ts
             eslint.config.ts
-            forge.config.ts
             tsconfig.json
 
       - name: Set up Node.js
@@ -55,17 +53,5 @@ jobs:
           npm pkg delete scripts.prepare
           npm install
 
-      - name: Run ESLint on modified files
-        run: |
-
-          FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }} | grep -E '\.ts$' | grep -E '^(src/ts/|esbuild.config.ts|eslint.config.ts|forge.config.ts|tsconfig.json)')
-
-          if [ -z "$FILES" ]; then
-            echo "No TypeScript files modified. Skipping ESLint."
-            exit 0
-          fi
-
-          echo "Running ESLint on modified files:"
-          echo "$FILES"
-
-          npx eslint $FILES
+      - name: Run ESLint
+        run: npx eslint src/ts/*.ts
