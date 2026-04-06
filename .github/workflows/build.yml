@@ -88,7 +88,9 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: dump-verifier-linux-${{ needs.set-version.outputs.version }}-${{ matrix.architecture }}
-          path: out/make/**/*.rpm
+          path: |
+            out/make/**/*.deb
+            out/make/**/*.rpm
           retention-days: 1
           overwrite: true
 
@@ -209,6 +211,54 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Download Linux x64 artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: dump-verifier-linux-${{ needs.set-version.outputs.version }}-x64
+          path: artifacts/linux-x64
+
+      - name: Download Linux arm64 artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: dump-verifier-linux-${{ needs.set-version.outputs.version }}-arm64
+          path: artifacts/linux-arm64
+
+      - name: Download macOS x64 artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: dump-verifier-macos-${{ needs.set-version.outputs.version }}-x64
+          path: artifacts/macos-x64
+
+      - name: Download macOS arm64 artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: dump-verifier-macos-${{ needs.set-version.outputs.version }}-arm64
+          path: artifacts/macos-arm64
+
+      - name: Download Windows x64 artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: dump-verifier-windows-${{ needs.set-version.outputs.version }}-x64
+          path: artifacts/windows-x64
+
+      - name: Download Windows arm64 artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: dump-verifier-windows-${{ needs.set-version.outputs.version }}-arm64
+          path: artifacts/windows-arm64
+
+      - name: Check that the artifacts are present
+        run: |
+          FILES=$(find artifacts -type f)
+
+          if [ -z "$FILES" ]; then
+            echo "No artifacts found!"
+            exit 1
+          fi
+
+          echo "Found artifacts:"
+          echo "$FILES"
+
       - name: Extract changelog for release
         id: extract_changelog
         run: |
@@ -226,9 +276,11 @@ jobs:
           body: ${{ env.changelog }}
           draft: false
           prerelease: false
-          token: ${{ secrets.GITHUB_TOKEN }}
           make_latest: true
           files: |
-            out/make/**/*.rpm
-            out/make/**/*.zip
-            out/make/**/*.exe
+            artifacts/linux-arm64/**/*.{deb,rpm}
+            artifacts/linux-x64/**/*.{deb,rpm}
+            artifacts/macos-arm64/**/*.zip
+            artifacts/macos-x64/**/*.zip
+            artifacts/windows-arm64/**/*.exe
+            artifacts/windows-x64/**/*.exe
