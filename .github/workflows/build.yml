@@ -6,9 +6,7 @@ on:
       - main
     paths:
       - '.github/workflows/build.yml'
-      - 'src/**'
       - 'changelog.md'
-      - 'package.json'
   workflow_dispatch:
 
 concurrency:
@@ -16,42 +14,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  check-paths:
-    name: Check Modified Paths
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Verify all paths are modified
-        id: verify_paths
-        run: |
-          # MODIFIED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }})
-          # echo "Modified files: $MODIFIED_FILES"
-
-          # REQUIRED_PATHS=(
-          #   "package.json"
-          #   "src/"
-          #   "changelog.md"
-          # )
-
-          # for path in "${REQUIRED_PATHS[@]}"; do
-          #   if ! echo "$MODIFIED_FILES" | grep -q "$path"; then
-          #     echo "required_paths_modified=false" >> $GITHUB_ENV
-          #     exit 0
-          #   fi
-          # done
-
-          echo "required_paths_modified=true" >> $GITHUB_ENV
-
-      - name: Set output to true
-        run: echo "::set-output name=paths_modified::true"
-
   build-linux:
     name: Compile and Package (Linux)
-    needs: check-paths
-    if: ${{ needs.check-paths.outputs.paths_modified == 'true' }}
     runs-on: ubuntu-latest
 
     strategy:
@@ -111,8 +75,6 @@ jobs:
 
   build-macos:
     name: Compile and Package (macOS)
-    needs: check-paths
-    if: ${{ needs.check-paths.outputs.paths_modified == 'true' }}
     runs-on: macos-latest
 
     strategy:
@@ -163,8 +125,6 @@ jobs:
 
   build-windows:
     name: Compile and Package (Windows)
-    needs: check-paths
-    if: ${{ needs.check-paths.outputs.paths_modified == 'true' }}
     runs-on: windows-latest
 
     strategy:
@@ -216,7 +176,6 @@ jobs:
   create-release:
     name: Create GitHub Release
     needs: [build-linux, build-macos, build-windows]
-    if: ${{ needs.check-paths.outputs.paths_modified == 'true' }}
     runs-on: ubuntu-latest
 
     steps:
