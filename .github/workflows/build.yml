@@ -47,23 +47,20 @@ jobs:
       - name: Install required packages for deb and rpm
         run: |
           sudo apt-get update
-          sudo apt-get install -y software-properties-common
-          sudo add-apt-repository universe
-          sudo apt-get update
-          sudo apt-get install -y dpkg-dev fakeroot build-essential rpm rpm-build flatpak-builder elfutils eu-strip
-          flatpak remote-add --if-not-exists --user flathub https://flathub.org/repo/flathub.flatpakrepo
+          sudo apt-get install -y dpkg-dev fakeroot build-essential rpm elfutils
 
       - name: Compile SCSS and TypeScript
         run: npm run build
 
       - name: Build packages
-        run: sudo npm run release -- --arch=${{ matrix.architecture }}
+        run: npm run release -- --arch=${{ matrix.architecture }}
 
       - name: Get version from package.json
         id: get_version
         run: |
           version=$(node -p "require('./package.json').version")
           echo "version=$version" >> $GITHUB_ENV
+          find out/make -type f -o -type d | head -50
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v6
@@ -114,6 +111,7 @@ jobs:
         run: |
           version=$(node -p "require('./package.json').version")
           echo "version=$version" >> $GITHUB_ENV
+          find out/make -type f -o -type d | head -50
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v6
@@ -164,6 +162,7 @@ jobs:
         run: |
           version=$(node -p "require('./package.json').version")
           echo "version=$version" >> $GITHUB_ENV
+          find out/make -type f -o -type d | head -50
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v6
