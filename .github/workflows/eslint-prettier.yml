@@ -37,7 +37,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-node-
 
-      - name: Install ESLint
+      - name: Install dependencies
         run: |
           npm pkg delete scripts.prepare
           npm install
