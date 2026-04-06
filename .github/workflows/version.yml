@@ -1,4 +1,5 @@
 name: Version Check
+run-name: Version Check
 
 on:
   pull_request:

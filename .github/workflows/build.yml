@@ -1,14 +1,15 @@
 name: Build and Package
 
+permissions:
+  contents: write
+
 on:
   push:
     branches:
       - main
     paths:
       - '.github/workflows/build.yml'
-      - 'src/**'
       - 'changelog.md'
-      - 'package.json'
   workflow_dispatch:
 
 concurrency:
@@ -16,9 +17,26 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  set-version:
+    name: Set Version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get_version.outputs.version }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get version from package.json
+        id: get_version
+        run: |
+          version=$(node -p "require('./package.json').version")
+          echo "version=$version" >> $GITHUB_ENV
+          echo "::set-output name=version::$version"
+
   build-linux:
     name: Compile and Package (Linux)
     runs-on: ubuntu-latest
+    needs: set-version
 
     strategy:
       matrix:
@@ -37,7 +55,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: /node_modules
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}-${{ matrix.architecture }}
           restore-keys: |
             ${{ runner.os }}-node-
 
@@ -45,29 +63,31 @@ jobs:
         run: |
           npm pkg delete scripts.prepare
           npm install
+        continue-on-error: true
+
+      - name: Clear npm cache (if install fails)
+        if: failure()
+        run: npm cache clean --force
+
+      - name: Retry Install dependencies
+        if: failure()
+        run: npm install
 
       - name: Install required packages for deb and rpm
         run: |
           sudo apt-get update
-          sudo apt-get install -y dpkg-dev fakeroot build-essential rpm rpm-build flatpak-builder eu-strip
-          flatpak remote-add --if-not-exists --user flathub https://flathub.org/repo/flathub.flatpakrepo
+          sudo apt-get install -y dpkg-dev fakeroot build-essential rpm elfutils
 
       - name: Compile SCSS and TypeScript
         run: npm run build
 
       - name: Build packages
-        run: sudo npm run release -- --arch=${{ matrix.architecture }}
-
-      - name: Get version from package.json
-        id: get_version
-        run: |
-          version=$(node -p "require('./package.json').version")
-          echo "version=$version" >> $GITHUB_ENV
+        run: npm run release -- --arch=${{ matrix.architecture }}
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v6
         with:
-          name: dump-verifier-linux-${{ env.version }}-${{ matrix.architecture }}
+          name: dump-verifier-linux-${{ needs.set-version.outputs.version }}-${{ matrix.architecture }}
           path: out/make/**/*.rpm
           retention-days: 1
           overwrite: true
@@ -75,6 +95,7 @@ jobs:
   build-macos:
     name: Compile and Package (macOS)
     runs-on: macos-latest
+    needs: set-version
 
     strategy:
       matrix:
@@ -93,7 +114,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: /node_modules
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}-${{ matrix.architecture }}
           restore-keys: |
             ${{ runner.os }}-node-
 
@@ -101,6 +122,15 @@ jobs:
         run: |
           npm pkg delete scripts.prepare
           npm install
+        continue-on-error: true
+
+      - name: Clear npm cache (if install fails)
+        if: failure()
+        run: npm cache clean --force
+
+      - name: Retry Install dependencies
+        if: failure()
+        run: npm install
 
       - name: Compile SCSS and TypeScript
         run: npm run build
@@ -108,16 +138,10 @@ jobs:
       - name: Build packages
         run: npm run release -- --arch=${{ matrix.architecture }}
 
-      - name: Get version from package.json
-        id: get_version
-        run: |
-          version=$(node -p "require('./package.json').version")
-          echo "version=$version" >> $GITHUB_ENV
-
       - name: Upload artifacts
         uses: actions/upload-artifact@v6
         with:
-          name: dump-verifier-macos-${{ env.version }}-${{ matrix.architecture }}
+          name: dump-verifier-macos-${{ needs.set-version.outputs.version }}-${{ matrix.architecture }}
           path: out/make/**/*.zip
           retention-days: 1
           overwrite: true
@@ -125,6 +149,7 @@ jobs:
   build-windows:
     name: Compile and Package (Windows)
     runs-on: windows-latest
+    needs: set-version
 
     strategy:
       matrix:
@@ -143,7 +168,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: /node_modules
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}-${{ matrix.architecture }}
           restore-keys: |
             ${{ runner.os }}-node-
 
@@ -151,6 +176,15 @@ jobs:
         run: |
           npm pkg delete scripts.prepare
           npm install
+        continue-on-error: true
+
+      - name: Clear npm cache (if install fails)
+        if: failure()
+        run: npm cache clean --force
+
+      - name: Retry Install dependencies
+        if: failure()
+        run: npm install
 
       - name: Compile SCSS and TypeScript
         run: npm run build
@@ -158,77 +192,43 @@ jobs:
       - name: Build packages
         run: npm run release -- --arch=${{ matrix.architecture }}
 
-      - name: Get version from package.json
-        id: get_version
-        run: |
-          version=$(node -p "require('./package.json').version")
-          echo "version=$version" >> $GITHUB_ENV
-
       - name: Upload artifacts
         uses: actions/upload-artifact@v6
         with:
-          name: dump-verifier-windows-${{ env.version }}-${{ matrix.architecture }}
+          name: dump-verifier-windows-${{ needs.set-version.outputs.version }}-${{ matrix.architecture }}
           path: out/make/**/*.exe
           retention-days: 1
           overwrite: true
 
   create-release:
     name: Create GitHub Release
+    needs: [set-version, build-linux, build-macos, build-windows]
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: 24
-
-      - name: Get version from package.json
-        id: get_version
-        run: |
-          version=$(node -p "require('./package.json').version")
-          echo "version=$version" >> $GITHUB_ENV
-
       - name: Extract changelog for release
         id: extract_changelog
         run: |
-          version=$(node -p "require('./package.json').version")
-          changelog=$(awk "/# v$version/,/^$/" changelog.md | sed '1d;$d')
+          changelog=$(awk '/# v${{ needs.set-version.outputs.version }}/{flag=1; next} /^#/{flag=0} flag' changelog.md | xargs)
+          echo "$changelog"
           echo "changelog<<EOF" >> $GITHUB_ENV
           echo "$changelog" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
 
       - name: Create Release
-        uses: actions/create-release@v1
+        uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ env.version }}
-          release_name: Release v${{ env.version }}
+          tag_name: v${{ needs.set-version.outputs.version }}
+          name: v${{ needs.set-version.outputs.version }}
           body: ${{ env.changelog }}
           draft: false
           prerelease: false
-
-      - name: Upload Linux Artifacts
-        uses: actions/upload-release-asset@v1
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: out/make/dump-verifier-linux-${{ env.version }}-*.rpm
-          asset_name: dump-verifier-linux-${{ env.version }}.zip
-          asset_content_type: application/zip
-
-      - name: Upload macOS Artifacts
-        uses: actions/upload-release-asset@v1
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: out/make/dump-verifier-macos-${{ env.version }}-*.zip
-          asset_name: dump-verifier-macos-${{ env.version }}.zip
-          asset_content_type: application/zip
-
-      - name: Upload Windows Artifacts
-        uses: actions/upload-release-asset@v1
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: out/make/dump-verifier-windows-${{ env.version }}-*.exe
-          asset_name: dump-verifier-windows-${{ env.version }}.zip
-          asset_content_type: application/zip
+          token: ${{ secrets.GITHUB_TOKEN }}
+          make_latest: true
+          files: |
+            out/make/**/*.rpm
+            out/make/**/*.zip
+            out/make/**/*.exe
