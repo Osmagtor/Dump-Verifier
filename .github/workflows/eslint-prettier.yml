@@ -52,11 +52,11 @@ jobs:
       - name: Run Prettier on modified files
         run: |
 
-          BASE=$(git merge-base origin/${{ github.event.pull_request.base.ref }} HEAD)
-          FILES=$(git diff --name-only $BASE HEAD)
+          BASE=$(git merge-base origin/main HEAD)
+          FILES=$(git diff --name-only $BASE HEAD | grep -E '\.(ts|json|md)$')
 
           if [ -z "$FILES" ]; then
-            echo "No TypeScript or JSON files modified. Skipping Prettier."
+            echo "No TypeScript, JSON, or Markdown files modified. Skipping Prettier."
             exit 0
           fi
 
