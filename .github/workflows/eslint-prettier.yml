@@ -1,5 +1,5 @@
-name: Prettier
-run-name: Check files with Prettier
+name: ESlint & Prettier
+run-name: Run ESLint and Prettier on modified files
 
 on:
   pull_request:
@@ -16,13 +16,15 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  prettier:
-    name: Format changed files with Prettier
+  eslint-prettier:
+    name: Run ESLint and Prettier on modified files
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Node.js
         uses: actions/setup-node@v6
@@ -41,6 +43,14 @@ jobs:
         run: |
           npm pkg delete scripts.prepare
           npm install
+        continue-on-error: true
 
-      - name: Check that files are formatted with Prettier
+      - name: Clear npm cache (if install fails)
+        if: failure()
+        run: npm cache clean --force
+
+      - name: Run Prettier on modified files
         run: npx prettier --check .
+
+      - name: Run ESLint on modified files
+        run: npx eslint src/ts/*.ts
