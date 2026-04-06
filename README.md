@@ -18,11 +18,7 @@ From the releases page of this repository, download the latest `compressed ZIP` 
 
 From the releases page of this repository, download the latest `.deb`/`.rpm` file for your architecture (`ARM` or `x64`). Install the app by navigating to the location of the downloaded file from a terminal and running `sudo apt install ./<package-name>` for the `.deb` package and `sudo rpm -i ./<package-name>` for the `.rpm` package.
 
-### 4. Flaltpak
-
-From the releases page of this repository, download the latest ` ` files for your architecture (`ARM` or `x64`). Install the app by navigating to the location of the downoaded file from a terminal and running `flatpak install ./<package-name>
-
-### 5. Other Linux builds
+### 4. Other Linux builds
 
 If you would like to use this app on a different Linux distribution and you are familiar with Electron apps, clone this repository and modify the `package.json` to accommodate for your desired distribution. Then run `npm run make`from said distribution. You will find the built package under `./out/make`.
 
