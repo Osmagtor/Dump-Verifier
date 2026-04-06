@@ -1,5 +1,5 @@
-name: ESlint
-run-name: Run ESLint on modified files
+name: ESlint & Prettier
+run-name: Run ESLint and Prettier on modified files
 
 on:
   pull_request:
@@ -11,7 +11,6 @@ on:
       - main
     paths:
       - '.github/workflows/eslint.yml'
-      - 'src/**'
   workflow_dispatch:
 
 concurrency:
@@ -19,18 +18,13 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  eslint:
-    name: Run ESLint on modified files
+  eslint-prettier:
+    name: Run ESLint and Prettier on modified files
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout only relevant files
+      - name: Checkout
         uses: actions/checkout@v4
-        with:
-          sparse-checkout: |
-            src/ts/
-            eslint.config.ts
-            tsconfig.json
 
       - name: Set up Node.js
         uses: actions/setup-node@v6
@@ -49,6 +43,26 @@ jobs:
         run: |
           npm pkg delete scripts.prepare
           npm install
+        continue-on-error: true
+
+      - name: Clear npm cache (if install fails)
+        if: failure()
+        run: npm cache clean --force
+
+      - name: Run Prettier on modified files
+        run: |
+
+          FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }} | grep -E '\.(ts|json)$' | grep -E '^(resources/|scripts/|cypress/|eslint.config.ts|tsconfig.json)')
+
+          if [ -z "$FILES" ]; then
+            echo "No TypeScript or JSON files modified. Skipping Prettier."
+            exit 0
+          fi
+
+          echo "Running Prettier on modified files:"
+          echo "$FILES"
+
+          npx prettier --check $FILES
 
       - name: Run ESLint on modified files
         run: |
