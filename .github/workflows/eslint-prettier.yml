@@ -9,8 +9,6 @@ on:
       - reopened
     branches:
       - main
-    paths:
-      - '.github/workflows/eslint.yml'
   workflow_dispatch:
 
 concurrency:
