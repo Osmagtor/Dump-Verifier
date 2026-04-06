@@ -16,13 +16,19 @@ From the releases page of this repository, download the latest `compressed ZIP` 
 
 ### 3. Debian/Fedora based distributions
 
-From the releases page of this repository, download the latest `.deb`/`.rpm` file for your architecture (`ARM` or `x64`). Install the app by navigating to the location of the downloaded file from a terminal and running `sudo apt install ./<package-name>`/`sudo rpm -i <package-name>`.
+From the releases page of this repository, download the latest `.deb`/`.rpm` file for your architecture (`ARM` or `x64`). Install the app by navigating to the location of the downloaded file from a terminal and running `sudo apt install ./<package-name>` for the `.deb` package and `sudo rpm -i ./<package-name>` for the `.rpm` package.
 
-### 4. Other Linux distributions
+### 4. Flaltpak
 
-If you would like to use this app on a different Linux distribution and you are familiar with Electron apps, clone this repository and modify the `package.json` to accommodate for your desired distribution. Then run `npm run watch` to generate all the `.css` and `.cjs`/`.js` files needed for compilation. That done, run `npm run make -- --arch=x64` or `npm run make -- --arch=arm64` from said distribution. You will find the built package under `./out/make`.
+From the releases page of this repository, download the latest ` ` files for your architecture (`ARM` or `x64`). Install the app by navigating to the location of the downoaded file from a terminal and running `flatpak install ./<package-name>
 
-As of the time of writing these instructions (31st of January of 2026), `.rpm` distributables can't be reliably packaged using `electron-maker-rpm` on the latest versions of Fedora and RPM. It may be necessary to make the change described [here](https://github.com/electron/forge/issues/3701).
+### 5. Other Linux builds
+
+If you would like to use this app on a different Linux distribution and you are familiar with Electron apps, clone this repository and modify the `package.json` to accommodate for your desired distribution. Then run `npm run make`from said distribution. You will find the built package under `./out/make`.
+
+As of the time of updating these instructions (31st of January of 2026), `.rpm` distributables can't be reliably packaged using `electron-maker-rpm` on the latest versions of Fedora and RPM. It may be necessary to make the change described [here](https://github.com/electron/forge/issues/3701#issuecomment-2552233499).
+
+As of the time of updating these instructions (6th of April of 2026), `.flatpak` distributables require an additional Flatpak repository to be built, as noted [here](https://github.com/electron/forge/issues/2561#issuecomment-1456162327). You may need to run `npm run make` as `sudo` to be able to build the `x64` distributable. As for `ARM`, I have not managed to get it to build locally.
 
 ## How to use
 
