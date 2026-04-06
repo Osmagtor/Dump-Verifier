@@ -249,7 +249,6 @@ jobs:
 
       - name: Check that the artifacts are present
         run: |
-          ls -R artifacts
           FILES=$(find artifacts -type f)
 
           if [ -z "$FILES" ]; then
@@ -279,9 +278,9 @@ jobs:
           prerelease: false
           make_latest: true
           files: |
-            artifacts/linux-x64/*
-            artifacts/linux-arm64/*
-            artifacts/macos-x64/*
-            artifacts/macos-arm64/*
-            artifacts/windows-x64/*
-            artifacts/windows-arm64/*
+            artifacts/linux-arm64/**/*.{deb,rpm}
+            artifacts/linux-x64/**/*.{deb,rpm}
+            artifacts/macos-arm64/**/*.zip
+            artifacts/macos-x64/**/*.zip
+            artifacts/windows-arm64/**/*.exe
+            artifacts/windows-x64/**/*.exe
