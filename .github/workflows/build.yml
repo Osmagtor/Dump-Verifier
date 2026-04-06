@@ -1,4 +1,5 @@
 name: Build and Package
+run-name: Build and Package
 
 on:
   push:
