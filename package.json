@@ -8,11 +8,10 @@
 	"type": "module",
 	"scripts": {
 		"start": "electron-forge start",
-		"package": "electron-forge package",
-		"make": "electron-forge make",
-		"publish": "electron-forge publish",
+		"make": "node --no-warnings --experimental-strip-types esbuild.config.ts build && electron-forge make --arch=x64 && electron-forge make --arch=arm64",
 		"watch": "node --no-warnings --experimental-strip-types esbuild.config.ts watch",
-		"build": "node --no-warnings --experimental-strip-types esbuild.config.ts build"
+		"build": "node --no-warnings --experimental-strip-types esbuild.config.ts build",
+		"release": "electron-forge make"
 	},
 	"keywords": [],
 	"dependencies": {
