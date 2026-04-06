@@ -1,5 +1,4 @@
 name: Build and Package
-run-name: Build and Package
 
 on:
   push:
@@ -14,9 +13,6 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
-env:
-  version: ${{ steps.get_version.outputs.version }}
-
 jobs:
   set-version:
     name: Set Version
@@ -30,7 +26,9 @@ jobs:
       - name: Get version from package.json
         id: get_version
         run: |
-          echo "::set-output name=version::$(node -p \"require('./package.json').version\")"
+          version=$(node -p "require('./package.json').version")
+          echo "version=$version" >> $GITHUB_ENV
+          echo "::set-output name=version::$version"
 
   build-linux:
     name: Compile and Package (Linux)
@@ -77,7 +75,7 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v6
         with:
-          name: dump-verifier-linux-${{ env.version }}-${{ matrix.architecture }}
+          name: dump-verifier-linux-${{ needs.set-version.outputs.version }}-${{ matrix.architecture }}
           path: out/make/**/*.rpm
           retention-days: 1
           overwrite: true
@@ -122,7 +120,7 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v6
         with:
-          name: dump-verifier-macos-${{ env.version }}-${{ matrix.architecture }}
+          name: dump-verifier-macos-${{ needs.set-version.outputs.version }}-${{ matrix.architecture }}
           path: out/make/**/*.zip
           retention-days: 1
           overwrite: true
@@ -167,7 +165,7 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v6
         with:
-          name: dump-verifier-windows-${{ env.version }}-${{ matrix.architecture }}
+          name: dump-verifier-windows-${{ needs.set-version.outputs.version }}-${{ matrix.architecture }}
           path: out/make/**/*.exe
           retention-days: 1
           overwrite: true
@@ -184,7 +182,7 @@ jobs:
       - name: Extract changelog for release
         id: extract_changelog
         run: |
-          changelog=$(awk "/# v${{ env.version }}/,/^$/" changelog.md | sed '1d;$d')
+          changelog=$(awk "/# v${{ needs.set-version.outputs.version }}/,/^$/" changelog.md | sed '1d;$d')
           echo "changelog<<EOF" >> $GITHUB_ENV
           echo "$changelog" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
@@ -192,8 +190,8 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ env.version }}
-          name: v${{ env.version }}
+          tag_name: v${{ needs.set-version.outputs.version }}
+          name: v${{ needs.set-version.outputs.version }}
           body: ${{ env.changelog }}
           draft: false
           prerelease: false
