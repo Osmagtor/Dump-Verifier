@@ -45,8 +45,8 @@ jobs:
 
           echo "required_paths_modified=true" >> $GITHUB_ENV
 
-      - name: Set output
-        run: echo "::set-output name=paths_modified::${{ env.required_paths_modified }}"
+      - name: Set output to true
+        run: echo "::set-output name=paths_modified::true"
 
   build-linux:
     name: Compile and Package (Linux)
