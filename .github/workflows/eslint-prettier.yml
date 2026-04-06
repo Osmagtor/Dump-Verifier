@@ -50,7 +50,7 @@ jobs:
       - name: Run Prettier on modified files
         run: |
 
-          FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }}
+          FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }})
 
           if [ -z "$FILES" ]; then
             echo "No TypeScript or JSON files modified. Skipping Prettier."
@@ -65,7 +65,7 @@ jobs:
       - name: Run ESLint on modified files
         run: |
 
-          FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }} | grep -E '\.ts$'
+          FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }} | grep -E '\.ts$')
 
           if [ -z "$FILES" ]; then
             echo "No TypeScript files modified. Skipping ESLint."
