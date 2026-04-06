@@ -247,6 +247,19 @@ jobs:
           name: dump-verifier-windows-${{ needs.set-version.outputs.version }}-arm64
           path: artifacts/windows-arm64
 
+      - name: Check that the artifacts are present
+        run: |
+          ls -R artifacts
+          FILES=$(find artifacts -type f)
+
+          if [ -z "$FILES" ]; then
+            echo "No artifacts found!"
+            exit 1
+          fi
+
+          echo "Found artifacts:"
+          echo "$FILES"
+
       - name: Extract changelog for release
         id: extract_changelog
         run: |
