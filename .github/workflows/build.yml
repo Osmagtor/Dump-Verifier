@@ -228,3 +228,7 @@ jobs:
           prerelease: false
           token: ${{ secrets.GITHUB_TOKEN }}
           make_latest: true
+          files: |
+            out/make/**/*.rpm
+            out/make/**/*.zip
+            out/make/**/*.exe
