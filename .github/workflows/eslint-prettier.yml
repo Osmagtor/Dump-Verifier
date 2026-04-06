@@ -50,33 +50,7 @@ jobs:
         run: npm cache clean --force
 
       - name: Run Prettier on modified files
-        run: |
-
-          BASE=$(git merge-base origin/main HEAD)
-          FILES=$(git diff --name-only $BASE HEAD | grep -E '\.(ts|json|md)$')
-
-          if [ -z "$FILES" ]; then
-            echo "No TypeScript, JSON, or Markdown files modified. Skipping Prettier."
-            exit 0
-          fi
-
-          echo "Running Prettier on modified files:"
-          echo "$FILES"
-
-          npx prettier --check $FILES
+        run: npx prettier --check .
 
       - name: Run ESLint on modified files
-        run: |
-
-          BASE=$(git merge-base origin/${{ github.event.pull_request.base.ref }} HEAD)
-          FILES=$(git diff --name-only $BASE HEAD | grep -E '\\.ts$')
-
-          if [ -z "$FILES" ]; then
-            echo "No TypeScript files modified. Skipping ESLint."
-            exit 0
-          fi
-
-          echo "Running ESLint on modified files:"
-          echo "$FILES"
-
-          npx eslint $FILES
+        run: npx eslint src/ts/*.ts
