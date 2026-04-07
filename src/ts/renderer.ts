@@ -126,6 +126,10 @@ window.electron.onTheme((theme: string): void => {
 		'--button-focus',
 		dark ? '#686868ff' : '#a7a7a7ff',
 	);
+	document.documentElement.style.setProperty(
+		'--help',
+		dark ? '#D1D1D1' : '#cfcece',
+	);
 	document.documentElement.style.setProperty('--submit-normal', '#009b4dff');
 	document.documentElement.style.setProperty('--submit-hover', '#00793cff');
 	document.documentElement.style.setProperty('--submit-focus', '#016b36ff');

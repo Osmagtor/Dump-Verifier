@@ -14,6 +14,7 @@ $colorButtonHover: var(--button-hover);
 $colorButtonFocus: var(--button-focus);
 $colorDisabled: var(--disabled);
 $colorSelect: var(--select);
+$colorHelp: var(--help);
 
 $colorSubmitNormal: var(--submit-normal);
 $colorSubmitHover: var(--submit-hover);
@@ -183,6 +184,8 @@ body {
 		}
 
 		input[type='submit'] {
+			color: white;
+
 			position: absolute;
 			bottom: 20px;
 			right: 20px;
@@ -322,11 +325,11 @@ body {
 		top: 10px;
 		right: 10px;
 
-		color: $colorFont;
+		color: $colorHelp;
 		font-weight: bolder;
 
 		border-radius: 50%;
-		border: 2px solid $colorFont;
+		border: 2px solid $colorHelp;
 
 		width: 23px;
 		height: 23px;
@@ -336,6 +339,32 @@ body {
 		align-items: center;
 
 		cursor: help;
+	}
+
+	#api {
+		position: absolute;
+		top: 6px;
+		right: 90px;
+
+		width: 30px;
+		height: 30px;
+		font-size: 20px;
+
+		display: flex;
+		justify-content: center;
+		align-items: center;
+
+		background-image: url('../../img/api.svg');
+		background-size: contain;
+		background-repeat: no-repeat;
+
+		filter: grayscale(1);
+
+		cursor: pointer;
+
+		&.active {
+			filter: grayscale(0);
+		}
 	}
 
 	#credentials {
