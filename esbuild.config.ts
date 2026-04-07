@@ -1,7 +1,7 @@
-import esbuild from 'esbuild';
-import { sassPlugin } from 'esbuild-sass-plugin';
 // @ts-expect-error Not being resolved by TypeScript but it works at runtime
 import process from 'process';
+import esbuild from 'esbuild';
+import { sassPlugin } from 'esbuild-sass-plugin';
 
 const param: string = process.argv[2] ?? '';
 
@@ -15,7 +15,10 @@ async function buildAll(): Promise<void> {
 	// This helps bundle the node_modules dependencies
 
 	const rendererCtx: esbuild.BuildContext = await esbuild.context({
-		entryPoints: ['./src/ts/renderer.ts'],
+		entryPoints: [
+			'./src/ts/utils/renderer.ts',
+			'./src/ts/utils/rendererModal.ts',
+		],
 		bundle: true,
 		sourcemap: param === 'watch',
 		minify: param === 'build',
@@ -36,7 +39,12 @@ async function buildAll(): Promise<void> {
 	// This helps bundle the node_modules dependencies
 
 	const mainCtx: esbuild.BuildContext = await esbuild.context({
-		entryPoints: ['./src/ts/main.ts', './src/ts/preload.ts'],
+		entryPoints: [
+			'./src/ts/main.ts',
+			'./src/ts/utils/preload.ts',
+			'./src/ts/utils/preloadModal.ts',
+			'./src/ts/classes/window.ts',
+		],
 		bundle: false,
 		sourcemap: param === 'watch',
 		minify: param === 'build',

@@ -4,7 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self' http://redump.org http://wiki.redump.org https://api.github.com/repos/Osmagtor/Dump-Verifier/releases/latest; script-src 'self'; style-src 'self'; connect-src 'self' http://redump.org http://wiki.redump.org https://api.github.com/repos/Osmagtor/Dump-Verifier/releases/latest;">
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self' http://redump.org http://wiki.redump.org https://api.github.com/repos/Osmagtor/Dump-Verifier/releases/latest; script-src 'self'; style-src 'self'; connect-src 'self' http://redump.org http://wiki.redump.org https://api.github.com/repos/Osmagtor/Dump-Verifier/releases/latest https://api.thegamesdb.net;">
 
     <title>Dump Verifier</title>
 
@@ -28,6 +29,11 @@
         <div class="row">
             <label for="game">Game</label>
             <input id="game" name="game" />
+        </div>
+
+        <div id="artwork">
+            <p>Image</p>
+            <img src="" alt="Game artwork" />
         </div>
 
         <div id="api"></div>

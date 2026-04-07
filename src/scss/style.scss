@@ -52,18 +52,42 @@ body {
 		position: relative;
 
 		> div {
-			margin: 10px;
+			&:not(#artwork) {
+				margin: 10px;
 
-			&.row {
-				display: grid;
-				grid-template-columns: 65px 480px;
-				align-items: center;
-				justify-content: center;
+				&.row {
+					display: grid;
+					grid-template-columns: 65px 480px;
+					align-items: center;
+					justify-content: center;
+				}
+
+				> label {
+					font-weight: bolder;
+					margin-right: 10px;
+				}
 			}
 
-			> label {
-				font-weight: bolder;
-				margin-right: 10px;
+			&#artwork {
+				display: none;
+
+				position: absolute;
+				right: 20px;
+				top: 70px;
+				z-index: 1;
+
+				border: solid 1px $colorConsoleBorder;
+
+				width: 75px;
+				height: 81px;
+
+				color: $colorFont;
+
+				&.visible {
+					display: flex;
+					justify-content: center;
+					align-items: center;
+				}
 			}
 		}
 
@@ -183,18 +207,6 @@ body {
 			}
 		}
 
-		input[type='submit'] {
-			color: white;
-
-			position: absolute;
-			bottom: 20px;
-			right: 20px;
-
-			&:focus-visible {
-				outline: $outline;
-			}
-		}
-
 		input[type='submit'],
 		button {
 			background-color: $colorButtonNormal;
@@ -229,6 +241,12 @@ body {
 		}
 
 		input[type='submit'] {
+			color: white;
+
+			position: absolute;
+			bottom: 20px;
+			right: 20px;
+
 			background-color: $colorSubmitNormal;
 
 			&:hover {
@@ -243,6 +261,28 @@ body {
 				background-color: $colorSubmitDisabled;
 				pointer-events: none;
 			}
+
+			&:focus-visible {
+				outline: $outline;
+			}
+
+			&:focus-visible {
+				outline: $outline;
+			}
+		}
+
+		> input[type='text'] {
+			$margin: 10px;
+
+			padding: 5px;
+			margin: $margin;
+			width: calc(100% - calc(2 * $margin));
+
+			border-radius: 5px;
+
+			color: $colorFont;
+			border-color: transparent;
+			background-color: $colorSelect;
 
 			&:focus-visible {
 				outline: $outline;
@@ -277,6 +317,10 @@ body {
 
 		.ts-wrapper {
 			min-height: 0px !important;
+
+			&.narrow {
+				max-width: 80%;
+			}
 
 			&.focus {
 				outline: $outline;

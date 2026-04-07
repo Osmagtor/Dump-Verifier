@@ -1,46 +1,46 @@
-import { log, logLine } from './renderer.js';
 import $ from 'jquery';
-import type { data } from './types.js';
+import type { data } from '../types.js';
+import Logger from './logger.js';
 
-class Verifier {
-	// COUNTERS
-
-	private total: number = 0;
-	private successful: number = 0;
-
-	// GETTERS
-
+export default class Verifier {
 	/**
-	 * Gets the total number of verifications performed
+	 * Getter for the total number of verifications performed
 	 * @returns {number} The total number of verifications performed
 	 */
-	public _total(): number {
+	public get _total(): number {
 		return this.total;
 	}
 
 	/**
-	 * Gets the number of successful verifications
+	 * Getter for the number of successful verifications
 	 * @returns {number} The number of successful verifications
 	 */
-	public _successful(): number {
+	public get _successful(): number {
 		return this.successful;
 	}
-
-	// FILE PATHS AND NAMES
 
 	private data: data[] = [];
 	private readonly filepaths: string[];
 	private readonly system: string;
 	private readonly game: string;
 	private readonly extensions: string[] = [];
+	private logger!: Logger;
+	private total: number = 0;
+	private successful: number = 0;
 
 	/**
 	 * Class constructor
 	 * @param {string[]} filepaths The file paths of the files to verify
 	 * @param {string} system The system that the files belong to
 	 * @param {string} game The game that the file supposedly represents
+	 * @param {Logger} logger The logger instance to use for logging
 	 */
-	constructor(filepaths: string[], system: string, game: string) {
+	constructor(
+		filepaths: string[],
+		system: string,
+		game: string,
+		logger: Logger,
+	) {
 		this.filepaths = filepaths;
 		this.system = system;
 		this.game = game;
@@ -48,6 +48,7 @@ class Verifier {
 			(filepath: string): string =>
 				filepath.split('.').pop()?.toLocaleLowerCase() ?? '',
 		);
+		this.logger = logger;
 	}
 
 	/**
@@ -71,9 +72,9 @@ class Verifier {
 
 		// Logging the loading bar
 
-		logLine();
-		log(`Verifying <i>"${filepath}"</i>...`);
-		log(
+		this.logger.emptyLine();
+		this.logger.add(`Verifying <i>"${filepath}"</i>...`);
+		this.logger.add(
 			`<span class='message'>Calculating SHA1:</span> <span class='progress-bar'></span> <span class='info'><span class='info__percentage'>0</span> <span class='info__loading'></span></span>`,
 			'normal',
 			true,
@@ -119,8 +120,6 @@ class Verifier {
 						gameData.size - 1 + i,
 					);
 
-					// console.log(gameData.sha1, hashTemp, hashTemp === gameData.sha1);
-
 					if (hashTemp === gameData.sha1) {
 						sha1 = hashTemp;
 						found = true;
@@ -148,12 +147,12 @@ class Verifier {
 
 		found ? this.successful++ : null;
 
-		log(`Calculated SHA1: <i>"${sha1}"</i>`);
-		log(
+		this.logger.add(`Calculated SHA1: <i>"${sha1}"</i>`);
+		this.logger.add(
 			`${found ? `Match found: <i>"${name}"</i> (${system})` : 'No match found'}`,
 			found ? 'success' : 'error',
 		);
-		logLine();
+		this.logger.emptyLine();
 	}
 
 	/**
@@ -221,6 +220,3 @@ class Verifier {
 		}
 	}
 }
-
-export default Verifier;
-export { data };

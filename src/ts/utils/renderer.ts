@@ -1,15 +1,19 @@
-import Verifier, { data } from './verifier.js';
-import Downloader, { systemData } from './downloader.js';
+import Verifier from '../classes/verifier.js';
+import Downloader from '../classes/downloader.js';
+import Logger from '../classes/logger.js';
 import $ from 'jquery';
 import tippy from 'tippy.js';
-import TomSelect from 'tom-select';
 import JSConfetti from 'js-confetti';
+import SelectGroup from '../classes/select-group.js';
+import type { data, systemData } from '../types.js';
+import { initializeThemeVariables } from './misc.js';
+import API from '../classes/api.js';
 
-const data: data[] = [];
-let consoleLog: string = '';
-let selectSystems: TomSelect | null = null;
-let selectGames: TomSelect | null = null;
-let games: data[] = [];
+const logger: Logger = new Logger('#console');
+const downloader: Downloader = new Downloader(logger);
+const selectorGroup: SelectGroup = new SelectGroup('#system', '#game');
+const api: API = new API(logger);
+
 let loading: any;
 
 // LISTENERS
@@ -70,80 +74,17 @@ let loading: any;
 
 // Listens for the theme event from the main process and set multiple CSS variables
 (window as any).electron.onTheme((theme: string): void => {
-	const dark: boolean = theme === 'dark';
-
-	// Change the CSS variables based on the theme
-
-	document.documentElement.style.setProperty(
-		'--os-accent-color',
-		dark ? '#0078d4' : '#0078d4',
-	);
-	document.documentElement.style.setProperty(
-		'--font',
-		dark ? '#ffffff' : '#000000',
-	);
-	document.documentElement.style.setProperty(
-		'--background',
-		dark ? '#191919' : '#ffffff',
-	);
-	document.documentElement.style.setProperty(
-		'--select',
-		dark ? '#4b4b4b' : '#e2e2e2ff',
-	);
-	document.documentElement.style.setProperty(
-		'--disabled',
-		dark ? '#292929ff' : '#f1f1f1ff',
-	);
-	document.documentElement.style.setProperty(
-		'--console',
-		dark ? '#191919' : '#ffffff',
-	);
-	document.documentElement.style.setProperty(
-		'--console-alternative',
-		dark ? '#4b4b4b' : '#f0f0f0',
-	);
-	document.documentElement.style.setProperty(
-		'--console-green',
-		dark ? '#71c971' : 'green',
-	);
-	document.documentElement.style.setProperty(
-		'--console-red',
-		dark ? '#db8888' : 'red',
-	);
-	document.documentElement.style.setProperty(
-		'--console-border',
-		dark ? '#3f3f3f' : '#dadada',
-	);
-	document.documentElement.style.setProperty(
-		'--button-normal',
-		dark ? '#4b4b4b' : '#e2e2e2ff',
-	);
-	document.documentElement.style.setProperty(
-		'--button-hover',
-		dark ? '#585858' : '#bdbdbdff',
-	);
-	document.documentElement.style.setProperty(
-		'--button-focus',
-		dark ? '#686868ff' : '#a7a7a7ff',
-	);
-	document.documentElement.style.setProperty(
-		'--help',
-		dark ? '#D1D1D1' : '#cfcece',
-	);
-	document.documentElement.style.setProperty('--submit-normal', '#009b4dff');
-	document.documentElement.style.setProperty('--submit-hover', '#00793cff');
-	document.documentElement.style.setProperty('--submit-focus', '#016b36ff');
-	document.documentElement.style.setProperty('--submit-disabled', '#005028ff');
+	initializeThemeVariables(theme);
 });
 
 $(document).ready(async (): Promise<void> => {
 	// Initializing the select elements
 
-	initSelects();
+	selectorGroup.initialize([], []);
 
 	// Disabling the form while loading
 
-	disableForm();
+	disableForm(selectorGroup);
 
 	// Adding the tooltip
 
@@ -163,13 +104,12 @@ $(document).ready(async (): Promise<void> => {
 		onShown(instance: any): void {
 			// Delegate click to open in system browser
 
-			const link: HTMLElement | null =
+			const link: HTMLAnchorElement | null =
 				instance.popper.querySelector('#no-intro-link');
 
 			if (link) {
 				link.addEventListener('click', function (e: any): void {
 					e.preventDefault();
-					// @ts-expect-error Not being resolved by TypeScript
 					(window as any).electron.ipcRenderer.invoke(
 						'openExternal',
 						this.href,
@@ -181,30 +121,43 @@ $(document).ready(async (): Promise<void> => {
 
 	// Getting all the systems and their games
 
-	await Downloader.init();
+	await downloader.init();
 
 	// Updating the select elements
 
-	await updateSelects();
+	const systems: systemData[] = downloader._systems;
+	await selectorGroup.updateSelects(systems);
 
 	// Checking for updates
 
-	await checkUpdates();
+	await checkUpdates(logger);
 
 	// Re-enabling the form
 
-	logLine();
-	enableForm();
+	logger.emptyLine();
+	enableForm(selectorGroup);
 });
 
 $('#api').on('click', async (ev: JQuery.Event): Promise<void> => {
 	ev.preventDefault();
+
+	const success: boolean = await api.getKey();
+
+	if (success) {
+		$('#api').addClass('active');
+		$('.row').find('>.ts-wrapper').addClass('narrow');
+		$('#artwork').addClass('visible');
+	} else {
+		$('#api').removeClass('active');
+		$('.row').find('>.ts-wrapper').removeClass('narrow');
+		$('#artwork').removeClass('visible');
+	}
 });
 
 $('#credentials').on('click', async (ev: JQuery.Event): Promise<void> => {
 	ev.preventDefault();
 
-	const success: boolean = await Downloader.getToken();
+	const success: boolean = await downloader.getToken();
 
 	if (success) $('#credentials').addClass('active');
 	else $('#credentials').removeClass('active');
@@ -215,7 +168,7 @@ $('#log').on('click', (ev: JQuery.Event): void => {
 
 	// Downloading the console log as a text file
 
-	const blob: Blob = new Blob([consoleLog], { type: 'text/plain' });
+	const blob: Blob = new Blob([logger._text], { type: 'text/plain' });
 	const url: string = URL.createObjectURL(blob);
 	const a: HTMLAnchorElement = document.createElement('a');
 	a.href = url;
@@ -230,20 +183,20 @@ $('#clear').on('click', (ev: JQuery.Event): void => {
 
 	// Clearing the console
 
-	$('#console').empty();
-	consoleLog = '';
+	logger.clear();
 });
 
 $('#system').on('change', async (): Promise<void> => {
 	// Disabling the form while processing
 
-	disableForm();
+	disableForm(selectorGroup);
 
-	await updateSelects();
+	const systems: systemData[] = downloader._systems;
+	await selectorGroup.updateSelects(systems);
 
 	// Re-enabling the form
 
-	enableForm();
+	enableForm(selectorGroup);
 });
 
 $('#files').on('click', async (ev: JQuery.Event): Promise<void> => {
@@ -271,15 +224,15 @@ $('#files').on('click', async (ev: JQuery.Event): Promise<void> => {
 	// Logging the selected file names
 
 	if (baseNames.length) {
-		logLine();
+		logger.emptyLine();
 
-		log('Selected file(s):');
+		logger.add('Selected file(s):');
 
 		baseNames.forEach((name: string): void => {
-			log(name);
+			logger.add(name);
 		});
 
-		logLine();
+		logger.emptyLine();
 	}
 
 	// Storing the file paths in the hidden input field
@@ -290,7 +243,7 @@ $('#files').on('click', async (ev: JQuery.Event): Promise<void> => {
 $('#redump').on('click', async (ev: JQuery.Event): Promise<void> => {
 	ev.preventDefault();
 
-	disableForm();
+	disableForm(selectorGroup);
 
 	const folder: string = 'dat/redump';
 
@@ -301,20 +254,20 @@ $('#redump').on('click', async (ev: JQuery.Event): Promise<void> => {
 		folder,
 	);
 
-	logLine();
-	log('Redump files deleted');
+	logger.emptyLine();
+	logger.add('Redump files deleted');
 
 	// Calling the initRedump function
 
-	await Downloader.initRedump();
+	await downloader.initRedump();
 
-	enableForm();
+	enableForm(selectorGroup);
 });
 
 $('#no-intro').on('click', async (ev: JQuery.Event): Promise<void> => {
 	ev.preventDefault();
 
-	disableForm();
+	disableForm(selectorGroup);
 
 	const folder: string = 'dat/no-intro';
 
@@ -333,8 +286,8 @@ $('#no-intro').on('click', async (ev: JQuery.Event): Promise<void> => {
 			folder,
 		);
 
-		logLine();
-		log('No-intro files deleted');
+		logger.emptyLine();
+		logger.add('No-intro files deleted');
 
 		// Iterating over the selected file paths to get their base names and content to be able to save them
 
@@ -358,10 +311,10 @@ $('#no-intro').on('click', async (ev: JQuery.Event): Promise<void> => {
 
 		// Calling the initNoIntro function
 
-		await Downloader.initNoIntro();
+		await downloader.initNoIntro();
 	}
 
-	enableForm();
+	enableForm(selectorGroup);
 });
 
 $('form').on('submit', async (ev: JQuery.Event): Promise<void> => {
@@ -369,22 +322,25 @@ $('form').on('submit', async (ev: JQuery.Event): Promise<void> => {
 
 	// Disabling the form while processing
 
-	disableForm();
+	disableForm(selectorGroup);
 
 	// Verifying the selected files
 
 	const value: string = $('#filepaths').val() as string;
 	const filePaths: string[] = value ? JSON.parse(value) : [];
-	const system: string = $('#system').val() as string;
-	const game: string = $('#game').val() as string;
+
+	const system: string = selectorGroup._selectSystemsValue;
+	const game: string = selectorGroup._selectGamesValue;
 
 	if (filePaths.length) {
-		const v: Verifier = new Verifier(filePaths, system, game);
+		const v: Verifier = new Verifier(filePaths, system, game, logger);
 		await v.init();
 
-		const successful: number = v._successful();
+		const successful: number = v._successful;
 
-		log(`${successful}/${filePaths.length} files verified successfully.`);
+		logger.add(
+			`${successful}/${filePaths.length} files verified successfully.`,
+		);
 
 		if (successful - filePaths.length === 0) {
 			// @ts-expect-error Not being resolved by TypeScript
@@ -397,180 +353,53 @@ $('form').on('submit', async (ev: JQuery.Event): Promise<void> => {
 			}
 		}
 	} else {
-		log('No file(s) selected.', 'error');
+		logger.add('No file(s) selected.', 'error');
 	}
 
 	// Re-enabling the form after processing
 
-	enableForm();
+	enableForm(selectorGroup);
 });
-
-// FUNCTIONS
-
-/**
- * Initializes the select elements with the Tom Select library
- */
-function initSelects(): void {
-	if (!selectSystems && !selectGames) {
-		selectSystems = new TomSelect('#system', {
-			maxItems: 1,
-			valueField: 'file',
-			searchField: ['name'],
-			labelField: 'name',
-			sortField: 'name',
-			create: false,
-		});
-
-		selectGames = new TomSelect('#game', {
-			maxItems: 1,
-			valueField: 'name',
-			searchField: ['name'],
-			labelField: 'name',
-			sortField: 'name',
-			create: false,
-			/**
-			 * Loads the game options based on the query
-			 * @param {string} query The search query to filter the games by
-			 * @param {Function} callback The function to call with the filtered results
-			 */
-			load: function (
-				query: string,
-				callback: (results: data[]) => void,
-			): void {
-				const max: number = 7;
-				const results: data[] = [];
-				let count: number = 0;
-
-				for (const game of games) {
-					if (game.name.toLowerCase().includes(query.toLowerCase())) {
-						results.push(game);
-						count++;
-						if (count >= max) break;
-					}
-				}
-
-				callback(results);
-			},
-		});
-	}
-}
-
-/**
- * Updates the select elements with the Tom Select library
- */
-async function updateSelects(): Promise<void> {
-	const systems: systemData[] = Downloader._systems();
-
-	// Getting the selected system to get the games for that system
-
-	const systemSelected: string = $('#system').val()?.toString() ?? '';
-
-	let folder: string = '';
-	let file: string = '';
-
-	games = [];
-
-	if (systemSelected) {
-		const parts: string[] = systemSelected.split('/');
-		folder = parts[1];
-		file = parts[2];
-
-		const jsonText: string = await (window as any).electron.ipcRenderer.invoke(
-			'readDatFile',
-			file,
-			`dat/${folder}`,
-		);
-		games = JSON.parse(jsonText);
-	}
-
-	// Updating the Tom Select elements with the new options
-
-	if (selectSystems) {
-		selectSystems.clearOptions();
-		selectSystems.addOptions(systems);
-	}
-
-	if (selectGames) {
-		selectGames.clearOptions();
-	}
-}
-
-/**
- * Logs a message to the console element in with optional color coding and a timestamp
- *
- * @param {string} message The message to log
- * @param {('success'|'error'|'normal')} type The type of message, which determines the color. Can be 'success', 'error', or 'normal'. Defaults to 'normal'
- * @param {boolean} time Whether to prepend the current time to the message. Defaults to true
- * @param {boolean} store Whether to store the message in the consoleLog variable. Defaults to true
- */
-function log(
-	message: string,
-	type: 'success' | 'error' | 'normal' = 'normal',
-	time: boolean = true,
-	store: boolean = true,
-): void {
-	const log: JQuery<HTMLTextAreaElement> = $('#console');
-
-	if (message) {
-		log.append(
-			`<span>${time ? `[${new Date().toLocaleTimeString()}] ` : ''}<span class="text-${type}">${message}</span></span>`,
-		);
-		if (store)
-			consoleLog += `${time ? `[${new Date().toLocaleTimeString()}] ` : ''}${message.replace(/<\/?[a-zA-Z]+>/g, '')}\n`;
-	} else {
-		log.append('<span></span>');
-		if (store) consoleLog += '\n';
-	}
-
-	log.scrollTop(log[0].scrollHeight);
-}
-
-/**
- * Logs an empty line to the console element
- */
-function logLine(): void {
-	const previousLogText: string = $('#console>span').last().text();
-	if (previousLogText) log('', 'normal', false);
-}
 
 /**
  * Enables the form inputs and selects
+ * @param {SelectGroup} selectorGroup The SelectGroup instance containing the Tom Select instances to enable
  */
-function enableForm(): void {
+export function enableForm(selectorGroup: SelectGroup): void {
 	$('form')
 		.find('form>div>input, button, input[type="submit"]')
 		.prop('disabled', false);
 	$('#credentials').css('pointer-events', 'auto');
 	$('#api').css('pointer-events', 'auto');
-	if (selectSystems) selectSystems.enable();
-	if (selectGames) selectGames.enable();
+	selectorGroup.enable();
 }
 
 /**
  * Disables the form inputs and selects
+ * @param {SelectGroup} selectorGroup The SelectGroup instance containing the Tom Select instances to disable
  */
-function disableForm(): void {
+export function disableForm(selectorGroup: SelectGroup): void {
 	$('form')
 		.find('form>div>input, button, input[type="submit"]')
 		.prop('disabled', true);
 	$('#credentials').css('pointer-events', 'none');
 	$('#api').css('pointer-events', 'none');
-	if (selectSystems) selectSystems.disable();
-	if (selectGames) selectGames.disable();
+	selectorGroup.disable();
 }
 
 /**
  * Checks for updates by comparing the current version with the latest release version on GitHub and logs the result to the console
+ * @param {Logger} logger The Logger instance to log the results to
  */
-async function checkUpdates(): Promise<void> {
+export async function checkUpdates(logger: Logger): Promise<void> {
 	// Getting the current version
 
 	const currentVersion: string = await (
 		window as any
 	).electron.ipcRenderer.invoke('getVersion');
 
-	logLine();
-	log(`The current version is: ${currentVersion}`);
+	logger.emptyLine();
+	logger.add(`The current version is: ${currentVersion}`);
 
 	try {
 		// Getting the latest release version from GitHub
@@ -586,7 +415,7 @@ async function checkUpdates(): Promise<void> {
 		const latestVersionLink: string = data.html_url;
 
 		if (currentVersion !== latestVersion) {
-			log(
+			logger.add(
 				`A new version is available: <a id="latest-version-link" href='${latestVersionLink}' target='_blank'>${latestVersion}</a> 🎉`,
 				'normal',
 				true,
@@ -612,15 +441,11 @@ async function checkUpdates(): Promise<void> {
 				}
 			}, 0);
 		} else {
-			log(`This is the latest version available`);
+			logger.add(`This is the latest version available`);
 		}
 	} catch {
 		// Nothing, there's probably just no internet connection or the Github API is down
 
-		log(`It was not possible to check for updates`, 'error');
+		logger.add(`It was not possible to check for updates`, 'error');
 	}
 }
-
-// EXPORTS
-
-export { log, logLine };
