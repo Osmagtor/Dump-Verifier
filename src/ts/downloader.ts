@@ -1,11 +1,7 @@
 import { log, logLine } from './renderer.js';
 import { data } from './verifier.js';
 import JSZip from 'jszip';
-
-interface systemData {
-	file: string;
-	name: string;
-}
+import type { systemData } from './types.js';
 
 class Downloader {
 	/**
@@ -43,13 +39,9 @@ class Downloader {
 				});
 			}
 		} catch {
-			// @ts-expect-error Not being resolved by TypeScript
-			const info: { file: string; content: string }[] =
-				await window.electron.ipcRenderer.invoke(
-					'readDatDirectory',
-					'dat/redump',
-					'json',
-				);
+			const info: { file: string; content: string }[] = await (
+				window as any
+			).electron.ipcRenderer.invoke('readDatDirectory', 'dat/redump', 'json');
 
 			info.forEach((el: { file: string; content: string }): void => {
 				links.push(el.file.replace('.json', ''));
@@ -64,9 +56,9 @@ class Downloader {
 	 * @returns {boolean} `True` if the token was successfully obtained, `false` otherwise
 	 */
 	public static async getToken(): Promise<boolean> {
-		// @ts-expect-error Not being resolved by TypeScript
-		Downloader.cookies =
-			await window.electron.ipcRenderer.invoke('redumpLogin');
+		Downloader.cookies = await (window as any).electron.ipcRenderer.invoke(
+			'redumpLogin',
+		);
 
 		if (Downloader.cookies) {
 			log('Successfully logged in');
@@ -80,9 +72,7 @@ class Downloader {
 	 * Initializes the downloader
 	 */
 	public static async init(): Promise<void> {
-		// @ts-expect-error Not being resolved by TypeScript
-		await window.electron.ipcRenderer.invoke('createDat');
-
+		await (window as any).electron.ipcRenderer.invoke('createDat');
 		await Downloader.initRedump();
 		await Downloader.initNoIntro();
 	}
@@ -119,31 +109,25 @@ class Downloader {
 
 		// Check if there exist .dat files the in no-intro folder
 
-		// @ts-expect-error Not being resolved by TypeScript
-		const textDat: { file: string; content: string }[] =
-			await window.electron.ipcRenderer.invoke(
-				'readDatDirectory',
-				folder,
-				'dat',
-			);
+		const textDat: { file: string; content: string }[] = await (
+			window as any
+		).electron.ipcRenderer.invoke('readDatDirectory', folder, 'dat');
 
 		if (textDat.length) {
 			for (const datText of textDat) {
 				const jsonFileName: string = datText.file.replace(/\.dat$/i, '.json');
 
-				// @ts-expect-error Not being resolved by TypeScript
-				const exists: boolean = await window.electron.ipcRenderer.invoke(
-					'checkFile',
-					jsonFileName,
-					folder,
-				);
+				const exists: boolean = await (
+					window as any
+				).electron.ipcRenderer.invoke('checkFile', jsonFileName, folder);
 
 				if (!exists) {
 					const data: data[] = Downloader.parseXML(datText.content, 'no-intro');
 
 					if (data[0]) {
-						// @ts-expect-error Not being resolved by TypeScript
-						const saved: boolean = await window.electron.ipcRenderer.invoke(
+						const saved: boolean = await (
+							window as any
+						).electron.ipcRenderer.invoke(
 							'saveDatFile',
 							jsonFileName,
 							folder,
@@ -160,8 +144,7 @@ class Downloader {
 
 							log(`Parsed DAT file "${datText.file}"`, 'success');
 
-							// @ts-expect-error Not being resolved by TypeScript
-							await window.electron.ipcRenderer.invoke(
+							await (window as any).electron.ipcRenderer.invoke(
 								'deleteDatFile',
 								datText.file,
 								folder,
@@ -170,8 +153,7 @@ class Downloader {
 							log(`Failed to parse data from "${datText.file}"`, 'error');
 						}
 					} else {
-						// @ts-expect-error Not being resolved by TypeScript
-						await window.electron.ipcRenderer.invoke(
+						await (window as any).electron.ipcRenderer.invoke(
 							'deleteDatFile',
 							datText.file,
 							folder,
@@ -181,13 +163,10 @@ class Downloader {
 			}
 		}
 
-		// @ts-expect-error Not being resolved by TypeScript
-		const text: { file: string; content: string }[] =
-			await window.electron.ipcRenderer.invoke(
-				'readDatDirectory',
-				folder,
-				'json',
-			);
+		const text: { file: string; content: string }[] = await (
+			window as any
+		).electron.ipcRenderer.invoke('readDatDirectory', folder, 'json');
+
 		Downloader.total = text.length;
 
 		for (const jsonText of text) {
@@ -224,12 +203,9 @@ class Downloader {
 				const datFileName: string = baseName + '.dat';
 				const jsonFileName: string = baseName + '.json';
 
-				// @ts-expect-error Not being resolved by TypeScript
-				const exists: boolean = await window.electron.ipcRenderer.invoke(
-					'checkFile',
-					jsonFileName,
-					folder,
-				);
+				const exists: boolean = await (
+					window as any
+				).electron.ipcRenderer.invoke('checkFile', jsonFileName, folder);
 
 				if (!exists) {
 					const dataFetched: ArrayBuffer | undefined =
@@ -243,8 +219,9 @@ class Downloader {
 							const data: data[] = Downloader.parseXML(xmlText, 'redump');
 
 							if (data.length) {
-								// @ts-expect-error Not being resolved by TypeScript
-								const saved: boolean = await window.electron.ipcRenderer.invoke(
+								const saved: boolean = await (
+									window as any
+								).electron.ipcRenderer.invoke(
 									'saveDatFile',
 									jsonFileName,
 									folder,
@@ -281,12 +258,9 @@ class Downloader {
 				} else {
 					log(`Loaded JSON file <i>"${jsonFileName}"</i>`, 'success');
 
-					// @ts-expect-error Not being resolved by TypeScript
-					const jsonText: string = await window.electron.ipcRenderer.invoke(
-						'readDatFile',
-						jsonFileName,
-						folder,
-					);
+					const jsonText: string = await (
+						window as any
+					).electron.ipcRenderer.invoke('readDatFile', jsonFileName, folder);
 
 					const data: data[] = JSON.parse(jsonText);
 					Downloader.systems.push({
@@ -312,8 +286,9 @@ class Downloader {
 	private static async fetch(url: string): Promise<ArrayBuffer | undefined> {
 		try {
 			if (Downloader.cookies) {
-				// @ts-expect-error Not being resolved by TypeScript
-				const ab: ArrayBuffer = await window.electron.ipcRenderer.invoke(
+				const ab: ArrayBuffer = await (
+					window as any
+				).electron.ipcRenderer.invoke(
 					'redumpCookieFetch',
 					url,
 					Downloader.cookies,

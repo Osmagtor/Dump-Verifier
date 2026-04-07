@@ -1,13 +1,6 @@
 import { log, logLine } from './renderer.js';
 import $ from 'jquery';
-
-interface data {
-	sha1: string;
-	name: string;
-	extension: string;
-	system: string;
-	size: number;
-}
+import type { data } from './types.js';
 
 class Verifier {
 	// COUNTERS
@@ -102,8 +95,7 @@ class Verifier {
 
 		// Starting with the verification process
 
-		// @ts-expect-error Not being resolved by TypeScript
-		let sha1: string = await window.electron.ipcRenderer.invoke(
+		let sha1: string = await (window as any).electron.ipcRenderer.invoke(
 			'hash',
 			filepath,
 		);
@@ -118,8 +110,9 @@ class Verifier {
 				const byteOffset: number = 20;
 
 				for (let i: number = 0; i < byteOffset; i++) {
-					// @ts-expect-error Not being resolved by TypeScript
-					const hashTemp: string = await window.electron.ipcRenderer.invoke(
+					const hashTemp: string = await (
+						window as any
+					).electron.ipcRenderer.invoke(
 						'hash',
 						filepath,
 						i,
@@ -171,21 +164,13 @@ class Verifier {
 		let data: data[] = [];
 
 		if (this.system) {
-			// @ts-expect-error Not being resolved by TypeScript
-			const textRedump: { file: string; content: string }[] =
-				await window.electron.ipcRenderer.invoke(
-					'readDatDirectory',
-					'dat/redump',
-					'json',
-				);
+			const textRedump: { file: string; content: string }[] = await (
+				window as any
+			).electron.ipcRenderer.invoke('readDatDirectory', 'dat/redump', 'json');
 
-			// @ts-expect-error Not being resolved by TypeScript
-			const textNoIntro: { file: string; content: string }[] =
-				await window.electron.ipcRenderer.invoke(
-					'readDatDirectory',
-					'dat/no-intro',
-					'json',
-				);
+			const textNoIntro: { file: string; content: string }[] = await (
+				window as any
+			).electron.ipcRenderer.invoke('readDatDirectory', 'dat/no-intro', 'json');
 			data = [...textRedump, ...textNoIntro].flatMap(
 				(e: { file: string; content: string }): any =>
 					e.content ? JSON.parse(e.content) : [],
@@ -195,8 +180,7 @@ class Verifier {
 			const folder: string = parts[1];
 			const file: string = parts[2];
 
-			// @ts-expect-error Not being resolved by TypeScript
-			const text: string = await window.electron.ipcRenderer.invoke(
+			const text: string = await (window as any).electron.ipcRenderer.invoke(
 				'readDatFile',
 				file,
 				`dat/${folder}`,

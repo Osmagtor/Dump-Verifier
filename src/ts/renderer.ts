@@ -15,61 +15,61 @@ let loading: any;
 // LISTENERS
 
 // Listens for the progress event from the main process and update the progress bar in the console
-// @ts-expect-error Not being resolved by TypeScript
-window.electron.ipcRenderer.on('progress', (_: any, percentage: any): void => {
-	// Update the percentage
+(window as any).electron.ipcRenderer.on(
+	'progress',
+	(_: any, percentage: any): void => {
+		// Update the percentage
 
-	const percent: JQuery<HTMLElement> = $('#console .info__percentage').last();
-	percent.text(percentage);
+		const percent: JQuery<HTMLElement> = $('#console .info__percentage').last();
+		percent.text(percentage);
 
-	// Update the progress bar
+		// Update the progress bar
 
-	const spans: JQuery<HTMLElement> = $('#console .progress-bar')
-		.last()
-		.find('span');
-	spans
-		.slice(0, Math.floor(spans.length * (percentage / 100)))
-		.each((_: number, span: HTMLElement): void => {
-			const c: string = $(span).attr('class') ?? '';
-			if (!c.includes('success')) $(span).attr('class', c + '-success');
-		});
+		const spans: JQuery<HTMLElement> = $('#console .progress-bar')
+			.last()
+			.find('span');
+		spans
+			.slice(0, Math.floor(spans.length * (percentage / 100)))
+			.each((_: number, span: HTMLElement): void => {
+				const c: string = $(span).attr('class') ?? '';
+				if (!c.includes('success')) $(span).attr('class', c + '-success');
+			});
 
-	// Update the loading spinner
+		// Update the loading spinner
 
-	const spinnerFrames: string[] = [
-		'⠋',
-		'⠙',
-		'⠹',
-		'⠸',
-		'⠼',
-		'⠴',
-		'⠦',
-		'⠧',
-		'⠇',
-		'⠏',
-	];
-	let spinnerIndex: number = 0;
+		const spinnerFrames: string[] = [
+			'⠋',
+			'⠙',
+			'⠹',
+			'⠸',
+			'⠼',
+			'⠴',
+			'⠦',
+			'⠧',
+			'⠇',
+			'⠏',
+		];
+		let spinnerIndex: number = 0;
 
-	if (!loading) {
-		loading = setInterval((): void => {
-			$('#console .info__loading').last().text(spinnerFrames[spinnerIndex]);
-			spinnerIndex = (spinnerIndex + 1) % spinnerFrames.length;
-		}, 100);
-	} else if (percentage >= 100) {
-		clearInterval(loading);
-		loading = null;
+		if (!loading) {
+			loading = setInterval((): void => {
+				$('#console .info__loading').last().text(spinnerFrames[spinnerIndex]);
+				spinnerIndex = (spinnerIndex + 1) % spinnerFrames.length;
+			}, 100);
+		} else if (percentage >= 100) {
+			clearInterval(loading);
+			loading = null;
 
-		const spinner: JQuery<HTMLElement> = $('#console .info__loading').last();
-		spinner.text('⠿');
-		spinner.attr('class', spinner.attr('class') + '-success');
-
-		percent.attr('class', percent.attr('class') + '-success');
-	}
-});
+			const spinner: JQuery<HTMLElement> = $('#console .info__loading').last();
+			spinner.text('⠿');
+			spinner.attr('class', spinner.attr('class') + '-success');
+			percent.attr('class', percent.attr('class') + '-success');
+		}
+	},
+);
 
 // Listens for the theme event from the main process and set multiple CSS variables
-// @ts-expect-error Not being resolved by TypeScript
-window.electron.onTheme((theme: string): void => {
+(window as any).electron.onTheme((theme: string): void => {
 	const dark: boolean = theme === 'dark';
 
 	// Change the CSS variables based on the theme
@@ -170,7 +170,10 @@ $(document).ready(async (): Promise<void> => {
 				link.addEventListener('click', function (e: any): void {
 					e.preventDefault();
 					// @ts-expect-error Not being resolved by TypeScript
-					window.electron.ipcRenderer.invoke('openExternal', this.href);
+					(window as any).electron.ipcRenderer.invoke(
+						'openExternal',
+						this.href,
+					);
 				});
 			}
 		},
@@ -192,6 +195,10 @@ $(document).ready(async (): Promise<void> => {
 
 	logLine();
 	enableForm();
+});
+
+$('#api').on('click', async (ev: JQuery.Event): Promise<void> => {
+	ev.preventDefault();
 });
 
 $('#credentials').on('click', async (ev: JQuery.Event): Promise<void> => {
@@ -244,8 +251,7 @@ $('#files').on('click', async (ev: JQuery.Event): Promise<void> => {
 
 	// Calling the openFile IPC handler to open a file dialog and get the selected file paths
 
-	// @ts-expect-error Not being resolved by TypeScript
-	const filePaths: string[] = await window.electron.ipcRenderer.invoke(
+	const filePaths: string[] = await (window as any).electron.ipcRenderer.invoke(
 		'openFile',
 		[],
 	);
@@ -254,8 +260,7 @@ $('#files').on('click', async (ev: JQuery.Event): Promise<void> => {
 	// Iterating over the selected file paths to get their base names
 
 	for (const filePath of filePaths) {
-		// @ts-expect-error Not being resolved by TypeScript
-		const baseName: string = await window.electron.ipcRenderer.invoke(
+		const baseName: string = await (window as any).electron.ipcRenderer.invoke(
 			'basename',
 			filePath,
 		);
@@ -291,8 +296,7 @@ $('#redump').on('click', async (ev: JQuery.Event): Promise<void> => {
 
 	// Calling the deleteDatDirectoryContents IPC handler to delete the contents of the dat/redump directory
 
-	// @ts-expect-error Not being resolved by TypeScript
-	await window.electron.ipcRenderer.invoke(
+	await (window as any).electron.ipcRenderer.invoke(
 		'deleteDatDirectoryContents',
 		folder,
 	);
@@ -316,8 +320,7 @@ $('#no-intro').on('click', async (ev: JQuery.Event): Promise<void> => {
 
 	// Calling the openFile IPC handler to open a file dialog and get the selected file paths
 
-	// @ts-expect-error Not being resolved by TypeScript
-	const filePaths: string[] = await window.electron.ipcRenderer.invoke(
+	const filePaths: string[] = await (window as any).electron.ipcRenderer.invoke(
 		'openFile',
 		['dat'],
 	);
@@ -325,8 +328,7 @@ $('#no-intro').on('click', async (ev: JQuery.Event): Promise<void> => {
 	if (filePaths?.length) {
 		// Calling the deleteDatDirectoryContents IPC handler to delete the contents of the dat/no-intro directory
 
-		// @ts-expect-error Not being resolved by TypeScript
-		await window.electron.ipcRenderer.invoke(
+		await (window as any).electron.ipcRenderer.invoke(
 			'deleteDatDirectoryContents',
 			folder,
 		);
@@ -337,20 +339,16 @@ $('#no-intro').on('click', async (ev: JQuery.Event): Promise<void> => {
 		// Iterating over the selected file paths to get their base names and content to be able to save them
 
 		for (const filePath of filePaths) {
-			// @ts-expect-error Not being resolved by TypeScript
-			const content: string = await window.electron.ipcRenderer.invoke(
+			const content: string = await (window as any).electron.ipcRenderer.invoke(
 				'readDatFileExternal',
 				filePath,
 			);
 
-			// @ts-expect-error Not being resolved by TypeScript
-			const basename: string = await window.electron.ipcRenderer.invoke(
-				'basename',
-				filePath,
-			);
+			const basename: string = await (
+				window as any
+			).electron.ipcRenderer.invoke('basename', filePath);
 
-			// @ts-expect-error Not being resolved by TypeScript
-			await window.electron.ipcRenderer.invoke(
+			await (window as any).electron.ipcRenderer.invoke(
 				'saveDatFile',
 				basename,
 				folder,
@@ -477,8 +475,7 @@ async function updateSelects(): Promise<void> {
 		folder = parts[1];
 		file = parts[2];
 
-		// @ts-expect-error Not being resolved by TypeScript
-		const jsonText: string = await window.electron.ipcRenderer.invoke(
+		const jsonText: string = await (window as any).electron.ipcRenderer.invoke(
 			'readDatFile',
 			file,
 			`dat/${folder}`,
@@ -544,6 +541,7 @@ function enableForm(): void {
 		.find('form>div>input, button, input[type="submit"]')
 		.prop('disabled', false);
 	$('#credentials').css('pointer-events', 'auto');
+	$('#api').css('pointer-events', 'auto');
 	if (selectSystems) selectSystems.enable();
 	if (selectGames) selectGames.enable();
 }
@@ -556,6 +554,7 @@ function disableForm(): void {
 		.find('form>div>input, button, input[type="submit"]')
 		.prop('disabled', true);
 	$('#credentials').css('pointer-events', 'none');
+	$('#api').css('pointer-events', 'none');
 	if (selectSystems) selectSystems.disable();
 	if (selectGames) selectGames.disable();
 }
@@ -566,9 +565,9 @@ function disableForm(): void {
 async function checkUpdates(): Promise<void> {
 	// Getting the current version
 
-	// @ts-expect-error Not being resolved by TypeScript
-	const currentVersion: string =
-		await window.electron.ipcRenderer.invoke('getVersion');
+	const currentVersion: string = await (
+		window as any
+	).electron.ipcRenderer.invoke('getVersion');
 
 	logLine();
 	log(`The current version is: ${currentVersion}`);
@@ -604,8 +603,10 @@ async function checkUpdates(): Promise<void> {
 						'click',
 						function (ev: JQuery.ClickEvent<HTMLAnchorElement>): void {
 							ev.preventDefault();
-							// @ts-expect-error Not being resolved by TypeScript
-							window.electron.ipcRenderer.invoke('openExternal', this.href);
+							(window as any).electron.ipcRenderer.invoke(
+								'openExternal',
+								this.href,
+							);
 						},
 					);
 				}
