@@ -60,6 +60,12 @@ body {
 					grid-template-columns: 65px 480px;
 					align-items: center;
 					justify-content: center;
+
+					&.narrow {
+						.ts-wrapper {
+							max-width: 80%;
+						}
+					}
 				}
 
 				> label {
@@ -87,6 +93,14 @@ body {
 					display: flex;
 					justify-content: center;
 					align-items: center;
+				}
+
+				> img {
+					display: none;
+
+					&.visible {
+						display: block;
+					}
 				}
 			}
 		}
@@ -317,10 +331,6 @@ body {
 
 		.ts-wrapper {
 			min-height: 0px !important;
-
-			&.narrow {
-				max-width: 80%;
-			}
 
 			&.focus {
 				outline: $outline;

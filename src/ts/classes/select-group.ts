@@ -1,12 +1,25 @@
 import TomSelect from 'tom-select';
-import Downloader from './downloader.js';
 import type { data, systemData } from '../types.js';
+import { TomOption } from 'tom-select/src/types/core.js';
 
 export default class SelectGroup {
 	private selectorSystems: string = '';
 	private selectorGames: string = '';
 	private selectSystems!: TomSelect;
 	private selectGames!: TomSelect;
+
+	/**
+	 * Getter for the text of the systems select element
+	 */
+	public get _selectSystemsText(): string {
+		if (this.selectSystems) {
+			const value = this.selectSystems.getValue() as string;
+			const option: TomOption = this.selectSystems.options[value];
+			return option ? option.name : '';
+		} else {
+			return '';
+		}
+	}
 
 	/**
 	 * Getter for the value of the systems select element

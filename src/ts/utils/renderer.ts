@@ -5,7 +5,7 @@ import $ from 'jquery';
 import tippy from 'tippy.js';
 import JSConfetti from 'js-confetti';
 import SelectGroup from '../classes/select-group.js';
-import type { data, systemData } from '../types.js';
+import type { systemData } from '../types.js';
 import { initializeThemeVariables } from './misc.js';
 import API from '../classes/api.js';
 
@@ -145,11 +145,11 @@ $('#api').on('click', async (ev: JQuery.Event): Promise<void> => {
 
 	if (success) {
 		$('#api').addClass('active');
-		$('.row').find('>.ts-wrapper').addClass('narrow');
+		$('.row').addClass('narrow');
 		$('#artwork').addClass('visible');
 	} else {
 		$('#api').removeClass('active');
-		$('.row').find('>.ts-wrapper').removeClass('narrow');
+		$('.row').removeClass('narrow');
 		$('#artwork').removeClass('visible');
 	}
 });
@@ -197,6 +197,53 @@ $('#system').on('change', async (): Promise<void> => {
 	// Re-enabling the form
 
 	enableForm(selectorGroup);
+});
+
+$('#game').on('change', async (): Promise<void> => {
+	const system: string = selectorGroup._selectSystemsText;
+	const game: string = selectorGroup._selectGamesValue;
+
+	if (system && game) {
+		const platform: string =
+			system
+				.split('/')?.[1]
+				?.trim()
+				?.replace(/- /g, '')
+				?.replace(/: /g, '')
+				?.toLowerCase() ?? '';
+
+		const platformId: number | null = await api.getPlatformId(platform);
+
+		console.log('Platform:', platform, 'Platform ID:', platformId);
+
+		if (platformId !== null) {
+			const gameName: string = game
+				.replace(/\([\w+\s-]+\)/g, '')
+				.replace(/\[\w+\]/g, '')
+				.replace(/\.[a-zA-Z0-9]+$/, '')
+				.trim()
+				.toLowerCase();
+
+			const gameId: number | null = await api.getGameByName(platformId, game);
+
+			console.log('Game:', game, 'Game Name:', gameName, 'Game ID:', gameId);
+
+			if (gameId !== null) {
+				const imageBase64: string | null = await api.getImageByGameId(gameId);
+
+				console.log('Image Base64:', imageBase64);
+
+				if (imageBase64) {
+					$('#artwork')
+						.addClass('visible')
+						.attr('alt', `${game} cover art`)
+						.attr('src', `data:image/jpeg;base64,${imageBase64}`);
+				} else {
+					$('#artwork').removeClass('visible').attr('src', '');
+				}
+			}
+		}
+	}
 });
 
 $('#files').on('click', async (ev: JQuery.Event): Promise<void> => {

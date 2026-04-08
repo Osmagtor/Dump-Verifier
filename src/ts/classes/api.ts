@@ -1,4 +1,10 @@
-import { apiDataGames, apiDataPlatforms } from '../types.js';
+import {
+	apiDataGames,
+	apiDataPlatforms,
+	apiResponse,
+	apiResponseGames,
+	apiResponsePlatforms,
+} from '../types.js';
 import Logger from './logger.js';
 import { closest } from 'fastest-levenshtein';
 
@@ -69,13 +75,16 @@ export default class API {
 	public async getPlatformId(platform: string): Promise<number | null> {
 		try {
 			const res: Response = await fetch(
-				`${this.apiUrl}/ByPlatformName?apikey=${this.apiKey}&name=${encodeURIComponent(platform)}`,
+				`${this.apiUrl}/Platforms/ByPlatformName?apikey=${this.apiKey}&name=${encodeURIComponent(platform)}`,
 			);
 
 			if (res.ok) {
-				const data: apiDataPlatforms = await res.json();
+				const data: apiResponsePlatforms = await res.json();
+
+				console.log('data', data);
+
 				const platforms: { name: string; id: number; alias: string }[] =
-					data.data.games;
+					data.data.platforms;
 
 				const platformNames: string[] = platforms.map(
 					(p: { name: string; id: number; alias: string }): string => p.name,
@@ -111,12 +120,14 @@ export default class API {
 	): Promise<number | null> {
 		try {
 			const res: Response = await fetch(
-				`${this.apiUrl}/ByGameName?apikey=${this.apiKey}&filter[platform]=${platformId}&name=${encodeURIComponent(gameName)}`,
+				`${this.apiUrl}/Games/ByGameName?apikey=${this.apiKey}&filter[platform]=${platformId}&name=${encodeURIComponent(gameName)}`,
 			);
 
 			if (res.ok) {
-				const data: apiDataGames = await res.json();
+				const data: apiResponseGames = await res.json();
 				const games: { game_title: string; id: number }[] = data.data.games;
+
+				console.log('Games found for platform ID', platformId, ':', games);
 
 				const gameNames: string[] = games.map(
 					(g: { game_title: string; id: number }): string => g.game_title,

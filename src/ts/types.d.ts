@@ -11,33 +11,37 @@ export interface systemData {
 	name: string;
 }
 
-export interface apiResponse {
+interface apiResponse {
 	code: number;
 	status: string;
 }
 
+export interface apiResponseGames extends apiResponse {
+	data: apiDataGames;
+}
+
+export interface apiResponsePlatforms extends apiResponse {
+	data: apiDataPlatforms;
+}
+
 export interface apiDataGames {
-	data: {
-		count: number;
-		games: {
-			id: number;
-			game_title: string;
-			release_date: string;
-			platform: number;
-			region_id: number;
-			country_id: number;
-			developers: number[];
-		}[];
-	};
+	count: number;
+	games: {
+		id: number;
+		game_title: string;
+		release_date: string;
+		platform: number;
+		region_id: number;
+		country_id: number;
+		developers: number[];
+	}[];
 }
 
 export interface apiDataPlatforms {
-	data: {
-		count: number;
-		games: {
-			id: number;
-			name: string;
-			alias: string;
-		}[];
-	};
+	count: number;
+	platforms: {
+		id: number;
+		name: string;
+		alias: string;
+	}[];
 }
