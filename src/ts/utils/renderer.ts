@@ -237,11 +237,15 @@ $('#files').on('click', async (ev: JQuery.Event): Promise<void> => {
 
 	// Calling the openFile IPC handler to open a file dialog and get the selected file paths
 
+	const baseNames: string[] = [];
 	const filePaths: string[] = await (window as any).electron.ipcRenderer.invoke(
 		'openFile',
 		[],
 	);
-	const baseNames: string[] = [];
+
+	if (!filePaths?.length) {
+		return;
+	}
 
 	// Iterating over the selected file paths to get their base names
 
