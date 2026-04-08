@@ -304,6 +304,8 @@ $('#redump').on('click', async (ev: JQuery.Event): Promise<void> => {
 $('#no-intro').on('click', async (ev: JQuery.Event): Promise<void> => {
 	ev.preventDefault();
 
+	// Disabling the form while processing
+
 	toggleForm(false, selectorGroup);
 
 	const folder: string = 'dat/no-intro';
@@ -350,6 +352,13 @@ $('#no-intro').on('click', async (ev: JQuery.Event): Promise<void> => {
 
 		await downloader.initNoIntro();
 	}
+
+	// Updating the selectGroup
+
+	await downloader.init();
+	selectorGroup.updateSelects(downloader._systems);
+
+	// Re-enabling the form
 
 	toggleForm(true, selectorGroup);
 });
