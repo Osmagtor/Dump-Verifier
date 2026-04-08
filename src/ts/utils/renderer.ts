@@ -6,7 +6,12 @@ import tippy from 'tippy.js';
 import JSConfetti from 'js-confetti';
 import SelectGroup from '../classes/select-group.js';
 import type { systemData } from '../types.js';
-import { initializeThemeVariables } from './misc.js';
+import {
+	checkUpdates,
+	toggleForm,
+	initializeThemeVariables,
+	toggleArtwork,
+} from './misc.js';
 import API from '../classes/api.js';
 
 const logger: Logger = new Logger('#console');
@@ -15,6 +20,8 @@ const selectorGroup: SelectGroup = new SelectGroup('#system', '#game');
 const api: API = new API(logger);
 
 let loading: any;
+let platformIdLast: number | null = null;
+let apiExists: boolean = false;
 
 // LISTENERS
 
@@ -84,7 +91,7 @@ $(document).ready(async (): Promise<void> => {
 
 	// Disabling the form while loading
 
-	disableForm(selectorGroup);
+	toggleForm(false, selectorGroup);
 
 	// Adding the tooltip
 
@@ -128,6 +135,16 @@ $(document).ready(async (): Promise<void> => {
 	const systems: systemData[] = downloader._systems;
 	await selectorGroup.updateSelects(systems);
 
+	// Checking if the API key is already stored and valid to show the artwork if possible
+
+	apiExists = await api.existsApiKey();
+
+	if (apiExists) {
+		logger.emptyLine();
+		logger.add('Games DB API key found in storage', 'success');
+		toggleArtwork(true, null, null, null);
+	}
+
 	// Checking for updates
 
 	await checkUpdates(logger);
@@ -135,23 +152,13 @@ $(document).ready(async (): Promise<void> => {
 	// Re-enabling the form
 
 	logger.emptyLine();
-	enableForm(selectorGroup);
+	toggleForm(true, selectorGroup);
 });
 
 $('#api').on('click', async (ev: JQuery.Event): Promise<void> => {
 	ev.preventDefault();
-
 	const success: boolean = await api.getKey();
-
-	if (success) {
-		$('#api').addClass('active');
-		$('.row').addClass('narrow');
-		$('#artwork').addClass('visible');
-	} else {
-		$('#api').removeClass('active');
-		$('.row').removeClass('narrow');
-		$('#artwork').removeClass('visible');
-	}
+	toggleArtwork(success, null, null, null);
 });
 
 $('#credentials').on('click', async (ev: JQuery.Event): Promise<void> => {
@@ -189,14 +196,24 @@ $('#clear').on('click', (ev: JQuery.Event): void => {
 $('#system').on('change', async (): Promise<void> => {
 	// Disabling the form while processing
 
-	disableForm(selectorGroup);
+	toggleForm(false, selectorGroup);
+
+	// Updating the games select element based on the selected system
 
 	const systems: systemData[] = downloader._systems;
 	await selectorGroup.updateSelects(systems);
 
+	// Clearing the platformIdLast variable to fetch the new platform ID when a new system is selected
+
+	platformIdLast = null;
+
+	// Removing the artwork when changing the system
+
+	toggleArtwork(apiExists, null, null, null);
+
 	// Re-enabling the form
 
-	enableForm(selectorGroup);
+	toggleForm(true, selectorGroup);
 });
 
 $('#game').on('change', async (): Promise<void> => {
@@ -204,42 +221,47 @@ $('#game').on('change', async (): Promise<void> => {
 	const game: string = selectorGroup._selectGamesValue;
 
 	if (system && game) {
-		const platform: string =
-			system
-				.split('/')?.[1]
-				?.trim()
-				?.replace(/- /g, '')
-				?.replace(/: /g, '')
-				?.toLowerCase() ?? '';
+		let platformId: number | null = platformIdLast;
 
-		const platformId: number | null = await api.getPlatformId(platform);
+		if (platformIdLast === null) {
+			const platformTemp: string =
+				system.split('/')?.[1]?.trim()?.replace(/: /g, '')?.toLowerCase() ?? '';
 
-		console.log('Platform:', platform, 'Platform ID:', platformId);
+			const platformTemp2: string = platformTemp.includes('-')
+				? platformTemp.split('-')?.[1]?.trim()
+				: platformTemp;
+
+			platformId = await api.getPlatformId(platformTemp2);
+		} else {
+			platformId = platformIdLast;
+		}
 
 		if (platformId !== null) {
-			const gameName: string = game
+			const gameNameTemp: string = game
 				.replace(/\([\w+\s-]+\)/g, '')
 				.replace(/\[\w+\]/g, '')
 				.replace(/\.[a-zA-Z0-9]+$/, '')
+				.replace(/,/g, '')
 				.trim()
 				.toLowerCase();
 
-			const gameId: number | null = await api.getGameByName(platformId, game);
+			const gameNameTemp2: string = gameNameTemp.includes('-')
+				? gameNameTemp.split('-')?.[1]?.trim()
+				: gameNameTemp;
 
-			console.log('Game:', game, 'Game Name:', gameName, 'Game ID:', gameId);
+			const gameId: number | null = await api.getGameByName(
+				platformId,
+				gameNameTemp2,
+			);
 
 			if (gameId !== null) {
-				const imageBase64: string | null = await api.getImageByGameId(gameId);
+				const imgData: { base64: string; aspectRatio: string } | null =
+					await api.getImageByGameId(gameId);
 
-				console.log('Image Base64:', imageBase64);
-
-				if (imageBase64) {
-					$('#artwork')
-						.addClass('visible')
-						.attr('alt', `${game} cover art`)
-						.attr('src', `data:image/jpeg;base64,${imageBase64}`);
+				if (imgData?.base64 && imgData?.aspectRatio) {
+					toggleArtwork(true, imgData.base64, game, imgData.aspectRatio);
 				} else {
-					$('#artwork').removeClass('visible').attr('src', '');
+					toggleArtwork(apiExists, null, null, null);
 				}
 			}
 		}
@@ -290,7 +312,7 @@ $('#files').on('click', async (ev: JQuery.Event): Promise<void> => {
 $('#redump').on('click', async (ev: JQuery.Event): Promise<void> => {
 	ev.preventDefault();
 
-	disableForm(selectorGroup);
+	toggleForm(false, selectorGroup);
 
 	const folder: string = 'dat/redump';
 
@@ -308,13 +330,13 @@ $('#redump').on('click', async (ev: JQuery.Event): Promise<void> => {
 
 	await downloader.initRedump();
 
-	enableForm(selectorGroup);
+	toggleForm(true, selectorGroup);
 });
 
 $('#no-intro').on('click', async (ev: JQuery.Event): Promise<void> => {
 	ev.preventDefault();
 
-	disableForm(selectorGroup);
+	toggleForm(false, selectorGroup);
 
 	const folder: string = 'dat/no-intro';
 
@@ -361,7 +383,7 @@ $('#no-intro').on('click', async (ev: JQuery.Event): Promise<void> => {
 		await downloader.initNoIntro();
 	}
 
-	enableForm(selectorGroup);
+	toggleForm(true, selectorGroup);
 });
 
 $('form').on('submit', async (ev: JQuery.Event): Promise<void> => {
@@ -369,7 +391,7 @@ $('form').on('submit', async (ev: JQuery.Event): Promise<void> => {
 
 	// Disabling the form while processing
 
-	disableForm(selectorGroup);
+	toggleForm(false, selectorGroup);
 
 	// Verifying the selected files
 
@@ -405,94 +427,5 @@ $('form').on('submit', async (ev: JQuery.Event): Promise<void> => {
 
 	// Re-enabling the form after processing
 
-	enableForm(selectorGroup);
+	toggleForm(true, selectorGroup);
 });
-
-/**
- * Enables the form inputs and selects
- * @param {SelectGroup} selectorGroup The SelectGroup instance containing the Tom Select instances to enable
- */
-export function enableForm(selectorGroup: SelectGroup): void {
-	$('form')
-		.find('form>div>input, button, input[type="submit"]')
-		.prop('disabled', false);
-	$('#credentials').css('pointer-events', 'auto');
-	$('#api').css('pointer-events', 'auto');
-	selectorGroup.enable();
-}
-
-/**
- * Disables the form inputs and selects
- * @param {SelectGroup} selectorGroup The SelectGroup instance containing the Tom Select instances to disable
- */
-export function disableForm(selectorGroup: SelectGroup): void {
-	$('form')
-		.find('form>div>input, button, input[type="submit"]')
-		.prop('disabled', true);
-	$('#credentials').css('pointer-events', 'none');
-	$('#api').css('pointer-events', 'none');
-	selectorGroup.disable();
-}
-
-/**
- * Checks for updates by comparing the current version with the latest release version on GitHub and logs the result to the console
- * @param {Logger} logger The Logger instance to log the results to
- */
-export async function checkUpdates(logger: Logger): Promise<void> {
-	// Getting the current version
-
-	const currentVersion: string = await (
-		window as any
-	).electron.ipcRenderer.invoke('getVersion');
-
-	logger.emptyLine();
-	logger.add(`The current version is: ${currentVersion}`);
-
-	try {
-		// Getting the latest release version from GitHub
-
-		const res: Response = await fetch(
-			'https://api.github.com/repos/Osmagtor/Dump-Verifier/releases/latest',
-		);
-		const data: any = await res.json();
-		const latestVersion: string = (data.tag_name ?? data.name)?.replace(
-			'v',
-			'',
-		);
-		const latestVersionLink: string = data.html_url;
-
-		if (currentVersion !== latestVersion) {
-			logger.add(
-				`A new version is available: <a id="latest-version-link" href='${latestVersionLink}' target='_blank'>${latestVersion}</a> 🎉`,
-				'normal',
-				true,
-				false,
-			);
-
-			// Delegating click to open in system browser
-
-			setTimeout((): void => {
-				const link: JQuery<HTMLAnchorElement> = $('#latest-version-link');
-
-				if (link) {
-					link.on(
-						'click',
-						function (ev: JQuery.ClickEvent<HTMLAnchorElement>): void {
-							ev.preventDefault();
-							(window as any).electron.ipcRenderer.invoke(
-								'openExternal',
-								this.href,
-							);
-						},
-					);
-				}
-			}, 0);
-		} else {
-			logger.add(`This is the latest version available`);
-		}
-	} catch {
-		// Nothing, there's probably just no internet connection or the Github API is down
-
-		logger.add(`It was not possible to check for updates`, 'error');
-	}
-}

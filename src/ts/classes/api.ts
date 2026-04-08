@@ -1,15 +1,11 @@
-import {
-	apiDataGames,
-	apiDataPlatforms,
-	apiResponse,
-	apiResponseGames,
-	apiResponsePlatforms,
-} from '../types.js';
+import { apiResponseGames, apiResponsePlatforms } from '../types.js';
 import Logger from './logger.js';
 import { closest } from 'fastest-levenshtein';
 
 export default class API {
-	private apiKey: string = '';
+	private static readonly service: string = 'GamesDBAPI';
+	private static readonly account: string = 'apiKey';
+
 	private apiUrl: string = 'https://api.thegamesdb.net/v1';
 	private imagesUrl: string =
 		'https://cdn.thegamesdb.net/images/thumb/boxart/front';
@@ -28,29 +24,117 @@ export default class API {
 	 * @returns {boolean} `True` if the key was successfully inserted, `false` otherwise
 	 */
 	public async getKey(): Promise<boolean> {
-		this.apiKey = await (window as any).electron.ipcRenderer.invoke('getKey');
+		const key: string = await (window as any).electron.ipcRenderer.invoke(
+			'getKey',
+		);
 
 		this.logger.add('Games DB API key saved successfully');
 		this.logger.add('Testing Games DB API key...');
 
-		if (await this.testApiKey()) {
-			this.logger.add('Games DB API key is valid', 'success');
+		if (!key) {
+			this.logger.add('No API key provided');
+			return false;
+		} else {
+			if (await this.testApiKey(key)) {
+				this.logger.add('Games DB API key is valid', 'success');
+				await this.storeApiKey(key);
+				return true;
+			} else {
+				this.logger.add('Games DB API key is invalid', 'error');
+				return false;
+			}
+		}
+	}
+
+	/**
+	 * Deletes the API key from secure storage
+	 */
+	public static async deleteApiKey(): Promise<void> {
+		try {
+			await (window as any).electron.ipcRenderer.invoke(
+				'deleteFromKeytar',
+				API.service,
+				API.account,
+			);
+		} catch (err: any) {
+			console.error('Error deleting API key:', err);
+			throw err;
+		}
+	}
+
+	/**
+	 * Stores the API key securely using keytar
+	 * @param {string} key The API key to store
+	 */
+	private async storeApiKey(key: string): Promise<void> {
+		try {
+			await (window as any).electron.ipcRenderer.invoke(
+				'storeInKeytar',
+				API.service,
+				API.account,
+				key,
+			);
+			this.logger.add('API key stored', 'success');
+		} catch (err: any) {
+			this.logger.add('Error storing API key', 'error');
+			console.error('Error storing API key:', err);
+			throw err;
+		}
+	}
+
+	/**
+	 * Retrieves the API key from secure storage using keytar
+	 * @returns {string | null} The retrieved API key, or null if not found
+	 */
+	private async retrieveApiKey(): Promise<string | null> {
+		try {
+			const key: string | null = await (
+				window as any
+			).electron.ipcRenderer.invoke('getFromKeytar', API.service, API.account);
+
+			if (key) {
+				return key;
+			} else {
+				return null;
+			}
+		} catch (err: any) {
+			this.logger.add('Error retrieving API key', 'error');
+			console.error('Error retrieving API key:', err);
+			throw err;
+		}
+	}
+
+	/**
+	 * Checks if the API key exists in secure storage
+	 * @returns {boolean} `True` if the API key exists, `false` otherwise
+	 */
+	public async existsApiKey(): Promise<boolean> {
+		const key: string | null = await this.retrieveApiKey();
+
+		if (key !== null) {
 			return true;
 		} else {
-			this.logger.add('Games DB API key is invalid', 'error');
-			this.apiKey = '';
+			if (!key && key !== null) {
+				await API.deleteApiKey();
+			}
+
 			return false;
 		}
 	}
 
 	/**
 	 * Tests the validity of the API key
+	 * @param {string} key The API key to test
 	 * @returns {boolean} `True` if successful, `false` otherwise
 	 */
-	public async testApiKey(): Promise<boolean> {
+	private async testApiKey(key: string): Promise<boolean> {
+		if (!key) {
+			return false;
+		}
+
 		try {
 			const res: Response = await fetch(
-				`${this.apiUrl}/Platforms?apikey=${this.apiKey}`,
+				`${this.apiUrl}/Platforms?apikey=${key}`,
 			);
 
 			if (res.ok) {
@@ -59,10 +143,8 @@ export default class API {
 				return false;
 			}
 		} catch (err: any) {
-			this.logger.add(
-				`Error testing Games DB API key: ${err.message}`,
-				'error',
-			);
+			this.logger.add('Error testing Games DB API key', 'error');
+			console.error('Error testing Games DB API key:', err);
 			return false;
 		}
 	}
@@ -73,15 +155,19 @@ export default class API {
 	 * @returns {Promise<number | null>} The ID of the closest matching platform, or null if not found
 	 */
 	public async getPlatformId(platform: string): Promise<number | null> {
+		const key: string | null = await this.retrieveApiKey();
+
+		if (!key) {
+			return null;
+		}
+
 		try {
 			const res: Response = await fetch(
-				`${this.apiUrl}/Platforms/ByPlatformName?apikey=${this.apiKey}&name=${encodeURIComponent(platform)}`,
+				`${this.apiUrl}/Platforms/ByPlatformName?apikey=${key}&name=${encodeURIComponent(platform)}`,
 			);
 
 			if (res.ok) {
 				const data: apiResponsePlatforms = await res.json();
-
-				console.log('data', data);
 
 				const platforms: { name: string; id: number; alias: string }[] =
 					data.data.platforms;
@@ -103,7 +189,8 @@ export default class API {
 				return null;
 			}
 		} catch (err: any) {
-			this.logger.add(`Error fetching platform: ${err.message}`, 'error');
+			this.logger.add('Error fetching platform', 'error');
+			console.error('Error fetching platform:', err);
 			return null;
 		}
 	}
@@ -118,16 +205,20 @@ export default class API {
 		platformId: number,
 		gameName: string,
 	): Promise<number | null> {
+		const key: string | null = await this.retrieveApiKey();
+
+		if (!key) {
+			return null;
+		}
+
 		try {
 			const res: Response = await fetch(
-				`${this.apiUrl}/Games/ByGameName?apikey=${this.apiKey}&filter[platform]=${platformId}&name=${encodeURIComponent(gameName)}`,
+				`${this.apiUrl}/Games/ByGameName?apikey=${key}&filter[platform]=${platformId}&name=${encodeURIComponent(gameName)}`,
 			);
 
 			if (res.ok) {
 				const data: apiResponseGames = await res.json();
 				const games: { game_title: string; id: number }[] = data.data.games;
-
-				console.log('Games found for platform ID', platformId, ':', games);
 
 				const gameNames: string[] = games.map(
 					(g: { game_title: string; id: number }): string => g.game_title,
@@ -146,7 +237,8 @@ export default class API {
 				return null;
 			}
 		} catch (err: any) {
-			this.logger.add(`Error fetching game: ${err.message}`, 'error');
+			this.logger.add('Error fetching game', 'error');
+			console.error('Error fetching game:', err);
 			return null;
 		}
 	}
@@ -154,25 +246,74 @@ export default class API {
 	/**
 	 * Gets the image of a game by its ID and returns it as a base64 string
 	 * @param {number} gameId The ID of the game to fetch the image for
-	 * @returns {Promise<string | null>} The base64 string of the game image, or null if not found or an error occurs
+	 * @returns {Promise<{ base64: string, aspectRatio: string } | null>} The base64 string of the game image and its aspect ratio, or null if not found or an error occurs
 	 */
-	public async getImageByGameId(gameId: number): Promise<string | null> {
+	public async getImageByGameId(
+		gameId: number,
+	): Promise<{ base64: string; aspectRatio: string } | null> {
 		try {
 			const res: Response = await fetch(`${this.imagesUrl}/${gameId}-1.jpg`);
 
 			if (res.ok) {
 				const blob: Blob = await res.blob();
-				const buffer: Buffer = Buffer.from(await blob.arrayBuffer());
-				return 'data:image/jpeg;base64,' + buffer.toString('base64');
-			} else {
-				this.logger.add(
-					`Error fetching game image: ${res.statusText}`,
-					'error',
+				const arrayBuffer: ArrayBuffer = await blob.arrayBuffer();
+				const uint8Array: Uint8Array = new Uint8Array(arrayBuffer);
+				const binaryString: string = String.fromCharCode.apply(
+					null,
+					Array.from(uint8Array),
 				);
-				return null;
+
+				const img: HTMLImageElement = new Image();
+
+				const aspectRatio: string = await new Promise<string>(
+					(resolve: (aspectRatio: string) => void): void => {
+						img.onload = (): void => resolve(`${img.width} / ${img.height}`);
+						img.onerror = (): void => resolve('1');
+						img.src = `data:image/jpeg;base64,${btoa(binaryString)}`;
+					},
+				);
+
+				return {
+					base64: btoa(binaryString),
+					aspectRatio: aspectRatio,
+				};
+			} else {
+				const res: Response = await fetch(`${this.imagesUrl}/${gameId}-2.jpg`);
+
+				if (res.ok) {
+					const blob: Blob = await res.blob();
+					const arrayBuffer: ArrayBuffer = await blob.arrayBuffer();
+					const uint8Array: Uint8Array = new Uint8Array(arrayBuffer);
+					const binaryString: string = String.fromCharCode.apply(
+						null,
+						Array.from(uint8Array),
+					);
+
+					const img: HTMLImageElement = new Image();
+
+					const aspectRatio: string = await new Promise<string>(
+						(resolve: (aspectRatio: string) => void): void => {
+							img.onload = (): void => resolve(`${img.width} / ${img.height}`);
+							img.onerror = (): void => resolve('1');
+							img.src = `data:image/jpeg;base64,${btoa(binaryString)}`;
+						},
+					);
+
+					return {
+						base64: btoa(binaryString),
+						aspectRatio: aspectRatio,
+					};
+				} else {
+					this.logger.add(
+						`Error fetching game image: ${res.statusText}`,
+						'error',
+					);
+					return null;
+				}
 			}
 		} catch (err: any) {
-			this.logger.add(`Error fetching game image: ${err.message}`, 'error');
+			this.logger.add('Error fetching game image', 'error');
+			console.error('Error fetching game image:', err);
 			return null;
 		}
 	}

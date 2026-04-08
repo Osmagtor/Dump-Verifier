@@ -13,6 +13,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as crypto from 'crypto';
 import { shell } from 'electron';
+import keytar from 'keytar';
 
 let baseDir: string;
 
@@ -29,7 +30,43 @@ if (process.platform === 'win32') {
 }
 
 void app.whenReady().then((): void => {
-	winMain.create();
+	ipcMain.handle(
+		'storeInKeytar',
+		async (
+			_: IpcMainInvokeEvent,
+			service: string,
+			account: string,
+			password: string,
+		): Promise<void> => {
+			await keytar.setPassword(service, account, password);
+		},
+	);
+
+	ipcMain.handle(
+		'getFromKeytar',
+		async (
+			_: IpcMainInvokeEvent,
+			service: string,
+			account: string,
+		): Promise<string | null> => {
+			return await keytar.getPassword(service, account);
+		},
+	);
+
+	ipcMain.handle(
+		'deleteFromKeytar',
+		async (
+			_: IpcMainInvokeEvent,
+			service: string,
+			account: string,
+		): Promise<void> => {
+			await keytar.deletePassword(service, account);
+
+			if (winApi._window) {
+				winApi.close();
+			}
+		},
+	);
 
 	ipcMain.handle(
 		'redumpCookieFetch',
@@ -408,6 +445,8 @@ void app.whenReady().then((): void => {
 			winMain.create();
 		}
 	});
+
+	winMain.create();
 });
 
 app.on('window-all-closed', (): void => {

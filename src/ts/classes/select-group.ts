@@ -75,6 +75,7 @@ export default class SelectGroup {
 
 		if (this.selectGames) {
 			this.selectGames.clearOptions();
+			this.selectGames.clear();
 			this.selectGames.destroy();
 		}
 

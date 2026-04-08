@@ -21,6 +21,11 @@ $colorSubmitHover: var(--submit-hover);
 $colorSubmitFocus: var(--submit-focus);
 $colorSubmitDisabled: var(--submit-disabled);
 
+$colorDeleteNormal: var(--delete-normal);
+$colorDeleteHover: var(--delete-hover);
+$colorDeleteFocus: var(--delete-focus);
+$colorDeleteDisabled: var(--delete-disabled);
+
 $colorConsoleTextGreen: var(--console-green);
 $colorConsoleTextRed: var(--console-red);
 
@@ -84,8 +89,8 @@ body {
 
 				border: solid 1px $colorConsoleBorder;
 
-				width: 75px;
 				height: 81px;
+				aspect-ratio: 1;
 
 				color: $colorFont;
 
@@ -95,12 +100,17 @@ body {
 					align-items: center;
 				}
 
-				> img {
+				> * {
 					display: none;
 
 					&.visible {
 						display: block;
 					}
+				}
+
+				> img {
+					width: 100%;
+					height: 100%;
 				}
 			}
 		}
@@ -251,6 +261,37 @@ body {
 
 			&:focus-visible {
 				outline: $outline;
+			}
+
+			&.delete {
+				color: white;
+
+				position: absolute;
+				bottom: 20px;
+				right: 135px;
+
+				background-color: $colorDeleteNormal;
+
+				&:hover {
+					background-color: $colorDeleteHover;
+				}
+
+				&:active {
+					background-color: $colorDeleteFocus;
+				}
+
+				&:disabled {
+					background-color: $colorDeleteDisabled;
+					pointer-events: none;
+				}
+
+				&:focus-visible {
+					outline: $outline;
+				}
+
+				&:focus-visible {
+					outline: $outline;
+				}
 			}
 		}
 

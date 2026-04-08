@@ -39,7 +39,13 @@ export default class Window {
 				res = { width: 585, height: 510 };
 			}
 		} else if (this.type === 'api') {
-			res = { width: 300, height: 160 };
+			if (process.platform === 'win32') {
+				res = { width: 300, height: 160 };
+			} else if (process.platform === 'darwin') {
+				res = { width: 300, height: 160 };
+			} else {
+				res = { width: 300, height: 120 };
+			}
 		} else {
 			res = { width: 800, height: 600 };
 		}

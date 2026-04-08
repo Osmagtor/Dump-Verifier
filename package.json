@@ -26,6 +26,7 @@
 		"jquery": "^3.7.1",
 		"js-confetti": "^0.12.0",
 		"jszip": "^3.10.1",
+		"keytar": "^7.9.0",
 		"lefthook": "^2.1.4",
 		"prettier": "^3.8.1",
 		"tar": "^7.5.13",
