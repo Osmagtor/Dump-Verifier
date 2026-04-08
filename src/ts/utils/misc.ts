@@ -128,7 +128,7 @@ export async function checkUpdates(logger: Logger): Promise<void> {
 		);
 		const latestVersionLink: string = data.html_url;
 
-		if (currentVersion !== latestVersion) {
+		if (currentVersion < latestVersion) {
 			logger.add(
 				`A new version is available: <a id="latest-version-link" href='${latestVersionLink}' target='_blank'>${latestVersion}</a> 🎉`,
 				'normal',
