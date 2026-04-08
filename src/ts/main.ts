@@ -30,6 +30,8 @@ if (process.platform === 'win32') {
 }
 
 void app.whenReady().then((): void => {
+	winMain.create();
+
 	ipcMain.handle(
 		'storeInKeytar',
 		async (
@@ -445,8 +447,6 @@ void app.whenReady().then((): void => {
 			winMain.create();
 		}
 	});
-
-	winMain.create();
 });
 
 app.on('window-all-closed', (): void => {

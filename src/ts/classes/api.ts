@@ -13,6 +13,7 @@ export default class API {
 
 	private platformIdCache: { [key: string]: number } = {};
 	private gameIdCache: { [key: string]: number } = {};
+	private failedCache: { [key: string]: boolean } = {};
 
 	/**
 	 * Class constructor
@@ -32,6 +33,8 @@ export default class API {
 				localStorage.getItem('platformIdCache');
 			const gameCacheString: string | null =
 				localStorage.getItem('gameIdCache');
+			const failedCacheString: string | null =
+				localStorage.getItem('failedCache');
 
 			if (platformCacheString) {
 				this.platformIdCache = JSON.parse(platformCacheString);
@@ -40,8 +43,24 @@ export default class API {
 			if (gameCacheString) {
 				this.gameIdCache = JSON.parse(gameCacheString);
 			}
+
+			if (failedCacheString) {
+				this.failedCache = JSON.parse(failedCacheString);
+			}
 		} catch (err: any) {
 			console.error('Error initializing cache:', err);
+		}
+	}
+
+	/**
+	 * Stores the failed queries cache in local storage to avoid repeating failed queries in the future and improve performance
+	 */
+	private storeFailedCache(): void {
+		try {
+			const cacheString: string = JSON.stringify(this.failedCache);
+			localStorage.setItem('failedCache', cacheString);
+		} catch (err: any) {
+			console.error('Error storing failed cache:', err);
 		}
 	}
 
@@ -53,7 +72,6 @@ export default class API {
 			const cacheString: string = JSON.stringify(this.platformIdCache);
 			localStorage.setItem('platformIdCache', cacheString);
 		} catch (err: any) {
-			this.logger.add('Error storing platform ID cache', 'error');
 			console.error('Error storing platform ID cache:', err);
 		}
 	}
@@ -66,7 +84,6 @@ export default class API {
 			const cacheString: string = JSON.stringify(this.gameIdCache);
 			localStorage.setItem('gameIdCache', cacheString);
 		} catch (err: any) {
-			this.logger.add('Error storing game ID cache', 'error');
 			console.error('Error storing game ID cache:', err);
 		}
 	}
@@ -221,6 +238,8 @@ export default class API {
 
 		if (this.platformIdCache[formattedPlatform]) {
 			return this.platformIdCache[formattedPlatform];
+		} else if (this.failedCache[formattedPlatform]) {
+			return null;
 		}
 
 		try {
@@ -253,6 +272,8 @@ export default class API {
 				return found;
 			} else {
 				this.logger.add(`Error fetching platform: ${res.statusText}`, 'error');
+				this.failedCache[formattedPlatform] = true;
+				this.storeFailedCache();
 				return null;
 			}
 		} catch (err: any) {
@@ -288,6 +309,8 @@ export default class API {
 
 		if (this.gameIdCache[cacheKey]) {
 			return this.gameIdCache[cacheKey];
+		} else if (this.failedCache[cacheKey]) {
+			return null;
 		}
 
 		try {
@@ -318,6 +341,8 @@ export default class API {
 				return found;
 			} else {
 				this.logger.add(`Error fetching game: ${res.statusText}`, 'error');
+				this.failedCache[cacheKey] = true;
+				this.storeFailedCache();
 				return null;
 			}
 		} catch (err: any) {
@@ -337,12 +362,19 @@ export default class API {
 		platform: string,
 		game: string,
 	): Promise<{ base64: string; aspectRatio: string } | null> {
+		if (!platform || !game || !this.existsApiKey()) {
+			return null;
+		}
+
 		// Getting the platform ID
 
 		const platformId: number | null = await this.getPlatformId(platform);
 
 		if (platformId === null) {
-			this.logger.add(`Cannot fetch game image: platform not found`, 'error');
+			this.logger.add(
+				`Cannot fetch game image: platform "${platform}" not found`,
+				'error',
+			);
 			return null;
 		}
 
@@ -351,7 +383,10 @@ export default class API {
 		const gameId: number | null = await this.getGameByName(platformId, game);
 
 		if (gameId === null) {
-			this.logger.add(`Cannot fetch game image: game not found`, 'error');
+			this.logger.add(
+				`Cannot fetch game image: game "${game}" not found`,
+				'error',
+			);
 			return null;
 		}
 
@@ -447,10 +482,10 @@ export default class API {
 	 */
 	private gameFormatter(game: string): string {
 		const gameNameTemp: string = game
-			.replace(/\([\w+\s-]+\)/g, '')
+			.replace(/\([\w+\s-,]+\)/g, '')
 			.replace(/\[\w+\]/g, '')
 			.replace(/\.[a-zA-Z0-9]+$/, '')
-			.replace(/,/g, '')
+			.replace(/[^a-zA-Z0-9-&'\s]/g, '')
 			.trim()
 			.toLowerCase();
 

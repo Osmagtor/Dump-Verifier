@@ -11,6 +11,7 @@ import {
 	toggleForm,
 	initializeThemeVariables,
 	toggleArtwork,
+	clearVerifiedImages,
 } from './misc.js';
 import API from '../classes/api.js';
 
@@ -92,6 +93,16 @@ $(document).ready(async (): Promise<void> => {
 
 	toggleForm(false, selectorGroup);
 
+	// Checking if the API key is already stored and valid to show the artwork if possible
+
+	apiExists = await api.existsApiKey();
+
+	if (apiExists) {
+		logger.emptyLine();
+		logger.add('Games DB API key found in storage', 'success');
+		toggleArtwork(true, null, null, null);
+	}
+
 	// Adding the tooltip
 
 	// @ts-expect-error Not being resolved by TypeScript
@@ -133,16 +144,6 @@ $(document).ready(async (): Promise<void> => {
 
 	const systems: systemData[] = downloader._systems;
 	await selectorGroup.updateSelects(systems);
-
-	// Checking if the API key is already stored and valid to show the artwork if possible
-
-	apiExists = await api.existsApiKey();
-
-	if (apiExists) {
-		logger.emptyLine();
-		logger.add('Games DB API key found in storage', 'success');
-		toggleArtwork(true, null, null, null);
-	}
 
 	// Checking for updates
 
@@ -190,6 +191,10 @@ $('#clear').on('click', (ev: JQuery.Event): void => {
 	// Clearing the console
 
 	logger.clear();
+
+	// Clearing the artwork
+
+	clearVerifiedImages();
 });
 
 $('#system').on('change', async (): Promise<void> => {
@@ -357,11 +362,20 @@ $('form').on('submit', async (ev: JQuery.Event): Promise<void> => {
 	const value: string = $('#filepaths').val() as string;
 	const filePaths: string[] = value ? JSON.parse(value) : [];
 
-	const system: string = selectorGroup._selectSystemsValue;
 	const game: string = selectorGroup._selectGamesValue;
+	const system: string = selectorGroup._selectSystemsValue;
+	const systemText: string = selectorGroup._selectSystemsText;
 
 	if (filePaths.length) {
-		const v: Verifier = new Verifier(filePaths, system, game, logger);
+		const v: Verifier = new Verifier(
+			filePaths,
+			system,
+			systemText,
+			game,
+			logger,
+			api,
+		);
+
 		await v.init();
 
 		const successful: number = v._successful;

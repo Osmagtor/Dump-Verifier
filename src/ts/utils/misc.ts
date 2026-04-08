@@ -1,6 +1,9 @@
 import SelectGroup from '../classes/select-group.js';
 import Logger from '../classes/logger.js';
 import $ from 'jquery';
+import tippy from 'tippy.js';
+
+let tippies: any[] = [];
 
 /**
  * Initializes the CSS variables based on the selected theme.
@@ -86,9 +89,16 @@ export function toggleForm(enabled: boolean, selectorGroup: SelectGroup): void {
 	$('form')
 		.find('form>div>input, button, input[type="submit"]')
 		.prop('disabled', !enabled);
+
 	$('#credentials').css('pointer-events', enabled ? 'auto' : 'none');
+
 	$('#api').css('pointer-events', enabled ? 'auto' : 'none');
-	selectorGroup.enable();
+
+	if (enabled) {
+		selectorGroup.enable();
+	} else {
+		selectorGroup.disable();
+	}
 }
 
 /**
@@ -200,4 +210,97 @@ export function toggleArtwork(
 
 		parent.find('p').addClass('visible');
 	}
+}
+
+/**
+ * Adds a verified game image to the verified images container
+ * @param {string} img The base64 string of the game image to add
+ * @param {string} alt The alt text for the game image
+ * @param {string} aspectRatio The aspect ratio for the game image
+ * @param {boolean} success Whether the verification was successful or not, used to determine the class of the image
+ */
+export function addImageToVerified(
+	img: string,
+	alt: string,
+	aspectRatio: string,
+	success: boolean,
+): void {
+	const container: JQuery<HTMLDivElement> = $('#images');
+
+	// Creating the image element with the provided data
+
+	const lastProgressBar: JQuery<HTMLSpanElement> = $('#console')
+		.find('>span')
+		.last();
+
+	const divElement: JQuery<HTMLElement> = $('<div></div>')
+		.append(
+			$('<img>')
+				.attr('src', img ? `data:image/jpeg;base64,${img}` : '')
+				.attr('alt', alt)
+				.on('click', (): void => {
+					// Scroll the console to the corresponding log entry when the image is clicked
+
+					lastProgressBar[0].scrollIntoView({
+						behavior: 'smooth',
+						block: 'center',
+					});
+
+					// Making the corresponding log entry blink to easily locate it
+
+					lastProgressBar.addClass('blink');
+
+					setTimeout((): void => {
+						lastProgressBar.removeClass('blink');
+					}, 2000);
+				}),
+			$('<div></div>')
+				.addClass(success ? 'success' : 'failure')
+				.text(success ? 'Verified' : 'Failed'),
+		)
+		.css('aspect-ratio', aspectRatio)
+		.addClass('visible')
+		.addClass(!img ? 'no-image' : '');
+
+	// Removing the placeholder text
+
+	container.find('p').removeClass('visible');
+
+	// Adding the image to the container
+
+	container.append(divElement);
+
+	// Adding a tippy tooltip to the image with the alt text
+
+	tippies.push(
+		// @ts-expect-error Not being resolved by TypeScript
+		tippy(divElement[0], {
+			content: `[${new Date().toLocaleTimeString()}] ${alt || 'No game found'}`,
+			arrow: true,
+			placement: 'left',
+			animation: 'scale-subtle',
+			trigger: 'mouseenter',
+		}),
+	);
+}
+
+/**
+ * Clears all verified game images from the verified images container and shows the placeholder text
+ */
+export function clearVerifiedImages(): void {
+	// Removing all images from the container
+
+	$('#images').find('>div').remove();
+
+	// Showing the placeholder text
+
+	$('#images').find('p').addClass('visible');
+
+	// Destroying all tippy instances to prevent memory leaks
+
+	tippies.forEach((tippyInstance: any): void => {
+		tippyInstance.destroy();
+	});
+
+	tippies = [];
 }
