@@ -102,7 +102,7 @@ export default class API {
 
 		if (!key) {
 			this.logger.add('No API key provided');
-			return false;
+			return this.existsApiKey();
 		} else {
 			if (await this.testApiKey(key)) {
 				this.logger.add('Games DB API key is valid', 'success');
