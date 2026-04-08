@@ -1,38 +1,81 @@
-import { log, logLine } from './renderer.js';
-import { data } from './verifier.js';
+import Logger from './logger.js';
 import JSZip from 'jszip';
-
-interface systemData {
-	file: string;
-	name: string;
-}
+import type { data, systemData } from '../types.js';
 
 class Downloader {
+	private static redumpURL: string =
+		'http://wiki.redump.org/index.php?title=List_of_DB_Download_Links';
+
+	private readonly systems: systemData[] = [];
+	private loaded: number = 0;
+	private total: number = 0;
+
+	private logger: Logger;
+	private cookies: string = '';
+	private requireAuthentication!: Record<string, boolean>;
+
 	/**
-	 * Gets the list of systems
-	 * @returns {systemData[]} An array of system data
+	 * Getter for the list of systems with their corresponding DAT file paths
 	 */
-	public static _systems(): systemData[] {
-		return Downloader.systems;
+	public get _systems(): systemData[] {
+		return this.systems;
 	}
 
-	private static readonly systems: systemData[] = [];
-	private static loaded: number = 0;
-	private static total: number = 0;
-	private static cookies: string = '';
+	/**
+	 * Class constructor
+	 * @param {Logger} logger The Logger instance to log messages to
+	 */
+	constructor(logger: Logger) {
+		this.logger = logger;
+		this.requireAuthentication = this.getRequireAuthentication();
+	}
+
+	/**
+	 * Gets the list of systems from Redump.org that require authentication from localStorage
+	 * @returns {Record<string, boolean>} An object where the keys are system names and the values indicate whether authentication is required
+	 */
+	private getRequireAuthentication(): Record<string, boolean> {
+		try {
+			const requireAuthenticationString: string | null = localStorage.getItem(
+				'requireAuthentication',
+			);
+
+			if (requireAuthenticationString) {
+				return JSON.parse(requireAuthenticationString);
+			}
+		} catch (err: any) {
+			console.error('Error parsing requireAuthentication:', err);
+		}
+
+		return {};
+	}
+
+	/**
+	 * Stores the list of systems from Redump.org that require authentication in localStorage
+	 * @param {Record<string, boolean>} requireAuthentication An object where the keys are system names and the values indicate whether authentication is required
+	 */
+	private storeRequireAuthentication(
+		requireAuthentication: Record<string, boolean>,
+	): void {
+		try {
+			localStorage.setItem(
+				'requireAuthentication',
+				JSON.stringify(requireAuthentication),
+			);
+		} catch (err: any) {
+			console.error('Error storing requireAuthentication:', err);
+		}
+	}
 
 	/**
 	 * Gets the URLs of the Redump DAT files
 	 * @returns {Promise<string[]>} A promise that resolves to an array of URLs for the Redump DAT files
 	 */
-	private static async getPathURLs(): Promise<string[]> {
+	private async getPathURLs(): Promise<string[]> {
 		const links: string[] = [];
 
-		const url: string =
-			'http://wiki.redump.org/index.php?title=List_of_DB_Download_Links';
-
 		try {
-			const res: Response = await fetch(url);
+			const res: Response = await fetch(Downloader.redumpURL);
 
 			if (res.ok) {
 				const htmlRaw: string = await res.text();
@@ -43,13 +86,9 @@ class Downloader {
 				});
 			}
 		} catch {
-			// @ts-expect-error Not being resolved by TypeScript
-			const info: { file: string; content: string }[] =
-				await window.electron.ipcRenderer.invoke(
-					'readDatDirectory',
-					'dat/redump',
-					'json',
-				);
+			const info: { file: string; content: string }[] = await (
+				window as any
+			).electron.ipcRenderer.invoke('readDatDirectory', 'dat/redump', 'json');
 
 			info.forEach((el: { file: string; content: string }): void => {
 				links.push(el.file.replace('.json', ''));
@@ -63,13 +102,13 @@ class Downloader {
 	 * Gets the authentication token
 	 * @returns {boolean} `True` if the token was successfully obtained, `false` otherwise
 	 */
-	public static async getToken(): Promise<boolean> {
-		// @ts-expect-error Not being resolved by TypeScript
-		Downloader.cookies =
-			await window.electron.ipcRenderer.invoke('redumpLogin');
+	public async getToken(): Promise<boolean> {
+		this.cookies = await (window as any).electron.ipcRenderer.invoke(
+			'redumpLogin',
+		);
 
-		if (Downloader.cookies) {
-			log('Successfully logged in');
+		if (this.cookies) {
+			this.logger.add('Successfully logged in');
 			return true;
 		} else {
 			return false;
@@ -79,71 +118,61 @@ class Downloader {
 	/**
 	 * Initializes the downloader
 	 */
-	public static async init(): Promise<void> {
-		// @ts-expect-error Not being resolved by TypeScript
-		await window.electron.ipcRenderer.invoke('createDat');
-
-		await Downloader.initRedump();
-		await Downloader.initNoIntro();
+	public async init(): Promise<void> {
+		await (window as any).electron.ipcRenderer.invoke('createDat');
+		await this.initRedump();
+		await this.initNoIntro();
 	}
 
 	/**
 	 * Initializes the Redump DAT files
 	 */
-	public static async initRedump(): Promise<void> {
-		Downloader.total = 0;
-		Downloader.loaded = 0;
+	public async initRedump(): Promise<void> {
+		this.total = 0;
+		this.loaded = 0;
 
-		logLine();
-		log('Preparing Redump files...');
-		await Downloader.redump();
+		this.logger.add('Preparing Redump files...');
+		await this.redump();
 	}
 	/**
 	 * Initializes the No-Intro DAT files
 	 */
-	public static async initNoIntro(): Promise<void> {
-		Downloader.total = 0;
-		Downloader.loaded = 0;
+	public async initNoIntro(): Promise<void> {
+		this.total = 0;
+		this.loaded = 0;
 
-		logLine();
-		log('Preparing No-intro files...');
-		await Downloader.nointro();
+		this.logger.add('Preparing No-intro files...');
+		await this.nointro();
 	}
 
 	/**
 	 * Checks for the existence of .dat files in the "dat/no-intro" folder, parses them to JSON if they exist, and saves the JSON files. It also loads any existing JSON files in the folder. After processing, it deletes the original .dat files.
 	 */
-	private static async nointro(): Promise<void> {
+	private async nointro(): Promise<void> {
 		const folder: string = 'dat/no-intro';
 		const newFiles: string[] = [];
 
 		// Check if there exist .dat files the in no-intro folder
 
-		// @ts-expect-error Not being resolved by TypeScript
-		const textDat: { file: string; content: string }[] =
-			await window.electron.ipcRenderer.invoke(
-				'readDatDirectory',
-				folder,
-				'dat',
-			);
+		const textDat: { file: string; content: string }[] = await (
+			window as any
+		).electron.ipcRenderer.invoke('readDatDirectory', folder, 'dat');
 
 		if (textDat.length) {
 			for (const datText of textDat) {
 				const jsonFileName: string = datText.file.replace(/\.dat$/i, '.json');
 
-				// @ts-expect-error Not being resolved by TypeScript
-				const exists: boolean = await window.electron.ipcRenderer.invoke(
-					'checkFile',
-					jsonFileName,
-					folder,
-				);
+				const exists: boolean = await (
+					window as any
+				).electron.ipcRenderer.invoke('checkFile', jsonFileName, folder);
 
 				if (!exists) {
 					const data: data[] = Downloader.parseXML(datText.content, 'no-intro');
 
 					if (data[0]) {
-						// @ts-expect-error Not being resolved by TypeScript
-						const saved: boolean = await window.electron.ipcRenderer.invoke(
+						const saved: boolean = await (
+							window as any
+						).electron.ipcRenderer.invoke(
 							'saveDatFile',
 							jsonFileName,
 							folder,
@@ -151,27 +180,29 @@ class Downloader {
 						);
 
 						if (saved) {
-							Downloader.systems.push({
+							this.systems.push({
 								file: `dat/no-intro/${jsonFileName}`,
 								name: data[0].system,
 							});
-							Downloader.loaded++;
+
+							this.loaded++;
 							newFiles.push(jsonFileName);
 
-							log(`Parsed DAT file "${datText.file}"`, 'success');
+							this.logger.add(`Parsed DAT file "${datText.file}"`, 'success');
 
-							// @ts-expect-error Not being resolved by TypeScript
-							await window.electron.ipcRenderer.invoke(
+							await (window as any).electron.ipcRenderer.invoke(
 								'deleteDatFile',
 								datText.file,
 								folder,
 							);
 						} else {
-							log(`Failed to parse data from "${datText.file}"`, 'error');
+							this.logger.add(
+								`Failed to parse data from "${datText.file}"`,
+								'error',
+							);
 						}
 					} else {
-						// @ts-expect-error Not being resolved by TypeScript
-						await window.electron.ipcRenderer.invoke(
+						await (window as any).electron.ipcRenderer.invoke(
 							'deleteDatFile',
 							datText.file,
 							folder,
@@ -181,39 +212,40 @@ class Downloader {
 			}
 		}
 
-		// @ts-expect-error Not being resolved by TypeScript
-		const text: { file: string; content: string }[] =
-			await window.electron.ipcRenderer.invoke(
-				'readDatDirectory',
-				folder,
-				'json',
-			);
-		Downloader.total = text.length;
+		const text: { file: string; content: string }[] = await (
+			window as any
+		).electron.ipcRenderer.invoke('readDatDirectory', folder, 'json');
+
+		this.total = text.length;
 
 		for (const jsonText of text) {
 			if (!newFiles.includes(jsonText.file)) {
 				const data: data[] = JSON.parse(jsonText.content);
 
-				Downloader.systems.push({
+				this.systems.push({
 					file: `dat/no-intro/${jsonText.file}`,
 					name: data[0].system,
 				});
-				Downloader.loaded++;
+				this.loaded++;
 
-				log(`Loaded JSON file <i>"${jsonText.file}"</i>`, 'success');
+				this.logger.add(
+					`Loaded JSON file <i>"${jsonText.file}"</i>`,
+					'success',
+				);
 			}
 		}
 
-		log(`Loaded ${Downloader.loaded}/${Downloader.total} JSON files`);
+		this.logger.add(`Loaded ${this.loaded}/${this.total} JSON files`);
 	}
 
 	/**
 	 * Downloads DAT files from the Redump website if they do not already exist locally and saves them as JSON files that follow the structure of the `data` interface.
 	 */
-	private static async redump(): Promise<void> {
-		const urls: string[] = await Downloader.getPathURLs();
-		Downloader.total = urls.length;
+	private async redump(): Promise<void> {
 		const folder: string = 'dat/redump';
+		const urls: string[] = await this.getPathURLs();
+
+		this.total = urls.length;
 
 		try {
 			for (const url of urls) {
@@ -224,16 +256,16 @@ class Downloader {
 				const datFileName: string = baseName + '.dat';
 				const jsonFileName: string = baseName + '.json';
 
-				// @ts-expect-error Not being resolved by TypeScript
-				const exists: boolean = await window.electron.ipcRenderer.invoke(
-					'checkFile',
-					jsonFileName,
-					folder,
-				);
+				const exists: boolean = await (
+					window as any
+				).electron.ipcRenderer.invoke('checkFile', jsonFileName, folder);
 
 				if (!exists) {
-					const dataFetched: ArrayBuffer | undefined =
-						await Downloader.fetch(url);
+					let dataFetched: ArrayBuffer | undefined;
+
+					if (!this.requireAuthentication[baseName]) {
+						dataFetched = await this.fetch(url + datFileName);
+					}
 
 					if (dataFetched) {
 						const xmlText: string | undefined =
@@ -243,8 +275,9 @@ class Downloader {
 							const data: data[] = Downloader.parseXML(xmlText, 'redump');
 
 							if (data.length) {
-								// @ts-expect-error Not being resolved by TypeScript
-								const saved: boolean = await window.electron.ipcRenderer.invoke(
+								const saved: boolean = await (
+									window as any
+								).electron.ipcRenderer.invoke(
 									'saveDatFile',
 									jsonFileName,
 									folder,
@@ -252,56 +285,73 @@ class Downloader {
 								);
 
 								if (saved) {
-									Downloader.systems.push({
+									this.systems.push({
 										file: `dat/redump/${jsonFileName}`,
 										name: data[0].system,
 									});
-									Downloader.loaded++;
+									this.loaded++;
 
-									log(
+									this.logger.add(
 										`Downloaded and saved DAT file "${datFileName}" from "${url}"`,
 										'success',
 									);
 								} else {
-									log(`Failed to parse data from "${url}"`, 'error');
+									this.logger.add(
+										`Failed to parse data from "${url}"`,
+										'error',
+									);
 								}
 							} else {
-								log(`Failed to save DAT file from "${url}"`, 'error');
+								this.logger.add(
+									`Failed to save DAT file from "${url}"`,
+									'error',
+								);
 							}
 						} else {
-							log(`Failed to unzip DAT file from "${url}"`, 'error');
-							log(
+							this.logger.add(
+								`Failed to unzip DAT file from "${url}"`,
+								'error',
+							);
+							this.logger.add(
 								'It probably requires authentication and dumper status',
 								'error',
 							);
+
+							this.requireAuthentication[baseName] = true;
+							this.storeRequireAuthentication(this.requireAuthentication);
 						}
+					} else if (!this.requireAuthentication[baseName]) {
+						this.logger.add(`Failed to fetch files from "${url}"`, 'error');
 					} else {
-						log(`Failed to fetch files from "${url}"`, 'error');
+						this.logger.add(
+							`Skipping "${datFileName}" as it requires authentication and dumper status`,
+							'error',
+						);
 					}
 				} else {
-					log(`Loaded JSON file <i>"${jsonFileName}"</i>`, 'success');
-
-					// @ts-expect-error Not being resolved by TypeScript
-					const jsonText: string = await window.electron.ipcRenderer.invoke(
-						'readDatFile',
-						jsonFileName,
-						folder,
+					this.logger.add(
+						`Loaded JSON file <i>"${jsonFileName}"</i>`,
+						'success',
 					);
 
+					const jsonText: string = await (
+						window as any
+					).electron.ipcRenderer.invoke('readDatFile', jsonFileName, folder);
+
 					const data: data[] = JSON.parse(jsonText);
-					Downloader.systems.push({
+					this.systems.push({
 						file: `dat/redump/${jsonFileName}`,
 						name: data[0].system,
 					});
-					Downloader.loaded++;
+					this.loaded++;
 				}
 			}
 		} catch (err: any) {
-			log(`There was an error downloading DAT files`, 'error');
+			this.logger.add(`There was an error downloading DAT files`, 'error');
 			console.error(err);
 		}
 
-		log(`Loaded ${Downloader.loaded}/${Downloader.total} JSON files`);
+		this.logger.add(`Loaded ${this.loaded}/${this.total} JSON files`);
 	}
 
 	/**
@@ -309,15 +359,12 @@ class Downloader {
 	 * @param {string} url The URL to fetch the DAT file from
 	 * @returns {Promise<ArrayBuffer | undefined>} A promise that resolves to the ArrayBuffer of the fetched file, or undefined if the fetch failed
 	 */
-	private static async fetch(url: string): Promise<ArrayBuffer | undefined> {
+	private async fetch(url: string): Promise<ArrayBuffer | undefined> {
 		try {
-			if (Downloader.cookies) {
-				// @ts-expect-error Not being resolved by TypeScript
-				const ab: ArrayBuffer = await window.electron.ipcRenderer.invoke(
-					'redumpCookieFetch',
-					url,
-					Downloader.cookies,
-				);
+			if (this.cookies) {
+				const ab: ArrayBuffer = await (
+					window as any
+				).electron.ipcRenderer.invoke('redumpCookieFetch', url, this.cookies);
 				if (ab) return ab;
 			} else {
 				const res: Response = await fetch(url);

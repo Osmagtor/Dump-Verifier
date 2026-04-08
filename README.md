@@ -31,6 +31,14 @@ As of the time of updating these instructions (6th of April of 2026), `.flatpak`
 The application consists of the following elements:
 
 - A button to select the game files to be verified.
+- A gray API icon to open a modal window and introduce a valid GamesDB API key.
+  - It is primarily used to get the cover art of:
+    1. The game that a backup is going to be verified against.
+    2. The games that have been verified so far. These will have a stamp over them with the status of the verification process. When hovered, the name of the game that the backup was verified against or the name of the game itself will be shown in a tooltip. When clicked, the console will be scrolled to the exact position with the result of the verifications process. The line in question will blink for a few seconds for easier identification.
+  - The key is stored locally for convenience as it is something that may be used very often, unlike `Redump` credentials, which are only necessary when fetching `.dat` files for the first time.
+  - It is worth noting that the cover art is region agnostic, meaning that it may not always match the region of your backup. There is no way to reliably determine a game's region from the title of its name in `Redump` and `No-Intro` `.dat` files. Nor is there a way to reliably determine a game's region using the GamesDB API. Suggestions are welcome.
+  - Some game names may not be processed correctly and their cover art may consequently fail to be retrieved. Please report these cases to make the app as watertight as possible.
+  - Caching is used to reduce the number of API calls where possible.
 - A gray key icon to log into `redump.org` and access to the `DAT` files reserved to users with dumper status. To do this:
   1. Click on the gray key icon. You will be taken to `forum.redump.org` to log in. If you have successfully logged in, the key will have turned yellow. This app does not store your credentials for security reasons so you will need to log in every time you open the app.
   2. Click on the `Update Redump` button to download all files again.

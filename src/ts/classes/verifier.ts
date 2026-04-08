@@ -1,60 +1,68 @@
-import { log, logLine } from './renderer.js';
 import $ from 'jquery';
+import type { data } from '../types.js';
+import Logger from './logger.js';
+import { addImageToVerified } from '../utils/misc.js';
+import API from './api.js';
 
-interface data {
-	sha1: string;
-	name: string;
-	extension: string;
-	system: string;
-	size: number;
-}
-
-class Verifier {
-	// COUNTERS
-
-	private total: number = 0;
-	private successful: number = 0;
-
-	// GETTERS
-
+export default class Verifier {
 	/**
-	 * Gets the total number of verifications performed
+	 * Getter for the total number of verifications performed
 	 * @returns {number} The total number of verifications performed
 	 */
-	public _total(): number {
+	public get _total(): number {
 		return this.total;
 	}
 
 	/**
-	 * Gets the number of successful verifications
+	 * Getter for the number of successful verifications
 	 * @returns {number} The number of successful verifications
 	 */
-	public _successful(): number {
+	public get _successful(): number {
 		return this.successful;
 	}
 
-	// FILE PATHS AND NAMES
-
-	private data: data[] = [];
 	private readonly filepaths: string[];
 	private readonly system: string;
-	private readonly game: string;
+	private readonly systemText: string;
 	private readonly extensions: string[] = [];
+	private game: string;
+
+	private data: data[] = [];
+	private total: number = 0;
+	private successful: number = 0;
+
+	private logger!: Logger;
+	private api!: API;
 
 	/**
 	 * Class constructor
 	 * @param {string[]} filepaths The file paths of the files to verify
 	 * @param {string} system The system that the files belong to
+	 * @param {string} systemText The text to display for the system in the logs
 	 * @param {string} game The game that the file supposedly represents
+	 * @param {Logger} logger The logger instance to use for logging
+	 * @param {API} api The API instance to use for retrieving data and images
 	 */
-	constructor(filepaths: string[], system: string, game: string) {
+	constructor(
+		filepaths: string[],
+		system: string,
+		systemText: string,
+		game: string,
+		logger: Logger,
+		api: API,
+	) {
 		this.filepaths = filepaths;
 		this.system = system;
+		this.systemText = systemText;
 		this.game = game;
+
 		this.extensions = filepaths.map(
 			(filepath: string): string =>
 				filepath.split('.').pop()?.toLocaleLowerCase() ?? '',
 		);
+
+		this.logger = logger;
+		this.api = api;
 	}
 
 	/**
@@ -78,9 +86,9 @@ class Verifier {
 
 		// Logging the loading bar
 
-		logLine();
-		log(`Verifying <i>"${filepath}"</i>...`);
-		log(
+		this.logger.emptyLine();
+		this.logger.add(`Verifying <i>"${filepath}"</i>...`);
+		this.logger.add(
 			`<span class='message'>Calculating SHA1:</span> <span class='progress-bar'></span> <span class='info'><span class='info__percentage'>0</span> <span class='info__loading'></span></span>`,
 			'normal',
 			true,
@@ -102,40 +110,47 @@ class Verifier {
 
 		// Starting with the verification process
 
-		// @ts-expect-error Not being resolved by TypeScript
-		let sha1: string = await window.electron.ipcRenderer.invoke(
+		let found: boolean = false;
+		let sha1: string = await (window as any).electron.ipcRenderer.invoke(
 			'hash',
 			filepath,
 		);
-		let found: boolean = false;
-		let name: string = '';
-		let system: string = '';
 
 		if (this.game && this.system) {
 			const gameData: data | undefined = this.findGame();
 
 			if (gameData) {
-				const byteOffset: number = 20;
-
-				for (let i: number = 0; i < byteOffset; i++) {
-					// @ts-expect-error Not being resolved by TypeScript
-					const hashTemp: string = await window.electron.ipcRenderer.invoke(
-						'hash',
-						filepath,
-						i,
-						gameData.size - 1 + i,
+				if (sha1 === gameData.sha1) {
+					found = true;
+				} else if (extension === 'bin' && this.system.includes('psx.json')) {
+					this.logger.add(
+						`SHA1 mismatch. Attempting to calculate alternate hashes.`,
 					);
 
-					// console.log(gameData.sha1, hashTemp, hashTemp === gameData.sha1);
+					const byteOffset: number = 20;
 
-					if (hashTemp === gameData.sha1) {
-						sha1 = hashTemp;
-						found = true;
-						name = gameData.name;
-						system = gameData.system;
-						break;
-					} else if (extension !== 'bin' && this.system !== 'psx.json') {
-						break; // If the extension is not 'bin', we stop checking further
+					for (let i: number = 0; i < byteOffset; i++) {
+						this.logger.add(
+							`Calculating with a ${i} byte offset...`,
+							'normal',
+							true,
+							false,
+						);
+
+						const hashTemp: string = await (
+							window as any
+						).electron.ipcRenderer.invoke(
+							'hash',
+							filepath,
+							i,
+							gameData.size - 1 + i,
+						);
+
+						if (hashTemp === gameData.sha1) {
+							found = true;
+							sha1 = hashTemp;
+							break;
+						}
 					}
 				}
 			}
@@ -147,20 +162,32 @@ class Verifier {
 
 			if (gameData) {
 				found = true;
-				sha1 = gameData.sha1;
-				name = gameData.name;
-				system = gameData.system;
+				this.game = gameData.name;
 			}
 		}
 
+		// Adding the image if a match was found
+
+		const imgData: { base64: string; aspectRatio: string } | null =
+			await this.api.getImage(this.systemText, this.game);
+
+		addImageToVerified(
+			imgData?.base64 ?? '',
+			this.game ?? '',
+			imgData?.aspectRatio ?? '',
+			found,
+		);
+
+		// Updating the successful count and logging the results
+
 		found ? this.successful++ : null;
 
-		log(`Calculated SHA1: <i>"${sha1}"</i>`);
-		log(
-			`${found ? `Match found: <i>"${name}"</i> (${system})` : 'No match found'}`,
+		this.logger.add(`Calculated SHA1: <i>"${sha1}"</i>`);
+		this.logger.add(
+			`${found ? `Match found: <i>"${this.game}"</i> (${this.systemText})` : 'No match found'}`,
 			found ? 'success' : 'error',
 		);
-		logLine();
+		this.logger.emptyLine();
 	}
 
 	/**
@@ -170,22 +197,14 @@ class Verifier {
 	private async getData(): Promise<data[]> {
 		let data: data[] = [];
 
-		if (this.system) {
-			// @ts-expect-error Not being resolved by TypeScript
-			const textRedump: { file: string; content: string }[] =
-				await window.electron.ipcRenderer.invoke(
-					'readDatDirectory',
-					'dat/redump',
-					'json',
-				);
+		if (!this.system) {
+			const textRedump: { file: string; content: string }[] = await (
+				window as any
+			).electron.ipcRenderer.invoke('readDatDirectory', 'dat/redump', 'json');
 
-			// @ts-expect-error Not being resolved by TypeScript
-			const textNoIntro: { file: string; content: string }[] =
-				await window.electron.ipcRenderer.invoke(
-					'readDatDirectory',
-					'dat/no-intro',
-					'json',
-				);
+			const textNoIntro: { file: string; content: string }[] = await (
+				window as any
+			).electron.ipcRenderer.invoke('readDatDirectory', 'dat/no-intro', 'json');
 			data = [...textRedump, ...textNoIntro].flatMap(
 				(e: { file: string; content: string }): any =>
 					e.content ? JSON.parse(e.content) : [],
@@ -195,8 +214,7 @@ class Verifier {
 			const folder: string = parts[1];
 			const file: string = parts[2];
 
-			// @ts-expect-error Not being resolved by TypeScript
-			const text: string = await window.electron.ipcRenderer.invoke(
+			const text: string = await (window as any).electron.ipcRenderer.invoke(
 				'readDatFile',
 				file,
 				`dat/${folder}`,
@@ -232,11 +250,8 @@ class Verifier {
 	 * @returns {data | undefined} The data object for the specified game, or undefined if there is no game
 	 */
 	private findGame(): data | undefined {
-		if (this.game && this.system) {
-			return this.data.find((e: data): boolean => e.name === this.game);
-		}
+		return this.data.find(
+			(e: data): boolean => e.name.trim() === this.game.trim(),
+		);
 	}
 }
-
-export default Verifier;
-export { data };

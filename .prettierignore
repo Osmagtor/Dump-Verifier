@@ -1,9 +1,9 @@
 # Ignore artifacts:
-.yml
-.icns
-.svg
-.ico
-.png
+*.yml
+*.icns
+*.svg
+*.ico
+*.png
 node_modules
 out
 dist

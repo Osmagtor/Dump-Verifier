@@ -1,9 +1,10 @@
+// @ts-expect-error Not being resolved by TypeScript but it works at runtime
+import Window from './window.cjs';
 import {
 	app,
 	BrowserWindow,
 	ipcMain,
 	dialog,
-	nativeTheme,
 	IpcMainInvokeEvent,
 	Cookie,
 	Session,
@@ -12,28 +13,62 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as crypto from 'crypto';
 import { shell } from 'electron';
+import keytar from 'keytar';
 
-let win: BrowserWindow | null = null;
 let baseDir: string;
-let width: number;
-let height: number;
+
+const winMain: Window = new Window('main', app);
+const winApi: Window = new Window('api', app);
+const winLogin: Window = new Window('login', app);
 
 if (process.platform === 'win32') {
 	baseDir = process.cwd();
-	width = 600;
-	height = 560;
 } else if (process.platform === 'darwin') {
 	baseDir = app.getPath('userData');
-	width = 585;
-	height = 545;
 } else {
 	baseDir = app.getPath('userData');
-	width = 585;
-	height = 490;
 }
 
 void app.whenReady().then((): void => {
-	createWindow();
+	winMain.create();
+
+	ipcMain.handle(
+		'storeInKeytar',
+		async (
+			_: IpcMainInvokeEvent,
+			service: string,
+			account: string,
+			password: string,
+		): Promise<void> => {
+			await keytar.setPassword(service, account, password);
+		},
+	);
+
+	ipcMain.handle(
+		'getFromKeytar',
+		async (
+			_: IpcMainInvokeEvent,
+			service: string,
+			account: string,
+		): Promise<string | null> => {
+			return await keytar.getPassword(service, account);
+		},
+	);
+
+	ipcMain.handle(
+		'deleteFromKeytar',
+		async (
+			_: IpcMainInvokeEvent,
+			service: string,
+			account: string,
+		): Promise<void> => {
+			await keytar.deletePassword(service, account);
+
+			if (winApi._window) {
+				winApi.close();
+			}
+		},
+	);
 
 	ipcMain.handle(
 		'redumpCookieFetch',
@@ -56,24 +91,48 @@ void app.whenReady().then((): void => {
 		},
 	);
 
+	ipcMain.handle('getKey', async (): Promise<string> => {
+		winApi.create();
+
+		if (!winApi._window) {
+			return '';
+		}
+
+		return new Promise((resolve: (result: string) => void): void => {
+			ipcMain.removeHandler('setApiKey');
+
+			// Returning the key if the user saves it through the modal
+
+			ipcMain.handle(
+				'setApiKey',
+				(_: IpcMainInvokeEvent, key: string): void => {
+					ipcMain.removeHandler('setApiKey');
+
+					winApi.close();
+					resolve(key);
+				},
+			);
+
+			// Returning an empty string if the window is closed without inserting a key
+
+			winApi._window.on('closed', (): void => {
+				resolve('');
+			});
+		});
+	});
+
 	ipcMain.handle('redumpLogin', async (): Promise<string> => {
 		return new Promise((resolve: (result: string) => void): void => {
-			const loginWin: BrowserWindow = new BrowserWindow({
-				width: 800,
-				height: 600,
-				modal: true,
-				webPreferences: {
-					nodeIntegration: false,
-					contextIsolation: true,
-				},
-			});
+			winLogin.create();
 
-			loginWin.setMenuBarVisibility(false);
-			void loginWin.loadURL('http://forum.redump.org/login/');
+			if (!winLogin._window) {
+				resolve('');
+				return;
+			}
 
 			// Listening for cookies changes
 
-			const ses: Session = loginWin.webContents.session;
+			const ses: Session = winLogin._window.webContents.session;
 
 			/**
 			 * Helper function to check for the presence of the session cookie and resolve the promise if found
@@ -93,7 +152,6 @@ void app.whenReady().then((): void => {
 
 				if (cookieString.includes('redump')) {
 					resolve(cookieString);
-					loginWin.close();
 				}
 			};
 
@@ -103,7 +161,7 @@ void app.whenReady().then((): void => {
 
 			// If the user closes the window without logging in
 
-			loginWin.on('closed', async (): Promise<void> => {
+			winLogin._window.on('closed', async (): Promise<void> => {
 				clearInterval(interval);
 
 				// Clearing all cookies for the external link
@@ -351,9 +409,12 @@ void app.whenReady().then((): void => {
 
 							// Emitting a progress event
 
-							if (win && percentage !== percentageOld) {
+							if (winMain && percentage !== percentageOld) {
 								percentageOld = percentage;
-								win.webContents.send('progress', percentage);
+
+								if (winMain._window) {
+									winMain._window.webContents.send('progress', percentage);
+								}
 							}
 						});
 
@@ -383,7 +444,7 @@ void app.whenReady().then((): void => {
 
 	app.on('activate', (): void => {
 		if (BrowserWindow.getAllWindows().length === 0) {
-			createWindow();
+			winMain.create();
 		}
 	});
 });
@@ -393,50 +454,3 @@ app.on('window-all-closed', (): void => {
 		app.quit();
 	}
 });
-
-// FUNCTIONS
-
-/**
- * Gets the current theme (dark or light) based on the user's system preferences using Electron's nativeTheme API.
- * @returns {'dark' | 'light'} The current theme, either 'dark' or 'light'.
- */
-function getTheme(): 'dark' | 'light' {
-	return nativeTheme.shouldUseDarkColors ? 'dark' : 'light';
-}
-
-/**
- * Creates the main application window and sets up event listeners for theme changes and communication with the renderer process.
- */
-function createWindow(): void {
-	const icon: string = path.join(app.getAppPath(), 'img/icon.ico');
-
-	win = new BrowserWindow({
-		width: width,
-		height: height,
-		resizable: false,
-		icon: icon,
-		webPreferences: {
-			preload: path.join(app.getAppPath(), 'dist/js/preload.cjs'),
-			contextIsolation: true,
-			nodeIntegration: false,
-		},
-	});
-
-	void win.loadFile(path.join(app.getAppPath(), 'dist/html/index.html'));
-	win.setMenuBarVisibility(false);
-
-	// Send accent color to renderer
-	win.webContents.on('did-finish-load', (): void => {
-		/**
-		 * Callback function to send the current theme to the renderer process
-		 */
-		const callbackTheme: () => void = (): void => {
-			const theme: 'dark' | 'light' = getTheme();
-			if (win) win.webContents.send('theme', theme);
-		};
-
-		if (win) nativeTheme.on('updated', callbackTheme);
-
-		callbackTheme();
-	});
-}
