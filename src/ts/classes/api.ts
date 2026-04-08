@@ -11,12 +11,64 @@ export default class API {
 		'https://cdn.thegamesdb.net/images/thumb/boxart/front';
 	private logger: Logger;
 
+	private platformIdCache: { [key: string]: number } = {};
+	private gameIdCache: { [key: string]: number } = {};
+
 	/**
 	 * Class constructor
 	 * @param {Logger} logger An instance of the Logger class to log messages to the console
 	 */
 	constructor(logger: Logger) {
 		this.logger = logger;
+		this.initializeCache();
+	}
+
+	/**
+	 * Initializes the platform and game ID caches by retrieving them from local storage, if they exist, to improve performance of API queries
+	 */
+	private initializeCache(): void {
+		try {
+			const platformCacheString: string | null =
+				localStorage.getItem('platformIdCache');
+			const gameCacheString: string | null =
+				localStorage.getItem('gameIdCache');
+
+			if (platformCacheString) {
+				this.platformIdCache = JSON.parse(platformCacheString);
+			}
+
+			if (gameCacheString) {
+				this.gameIdCache = JSON.parse(gameCacheString);
+			}
+		} catch (err: any) {
+			console.error('Error initializing cache:', err);
+		}
+	}
+
+	/**
+	 * Stores the platform ID cache in local storage to improve performance of future queries
+	 */
+	private storeCachePlatform(): void {
+		try {
+			const cacheString: string = JSON.stringify(this.platformIdCache);
+			localStorage.setItem('platformIdCache', cacheString);
+		} catch (err: any) {
+			this.logger.add('Error storing platform ID cache', 'error');
+			console.error('Error storing platform ID cache:', err);
+		}
+	}
+
+	/**
+	 * Stores the game ID cache in local storage to improve performance of future queries
+	 */
+	private storeCacheGame(): void {
+		try {
+			const cacheString: string = JSON.stringify(this.gameIdCache);
+			localStorage.setItem('gameIdCache', cacheString);
+		} catch (err: any) {
+			this.logger.add('Error storing game ID cache', 'error');
+			console.error('Error storing game ID cache:', err);
+		}
 	}
 
 	/**
@@ -154,16 +206,26 @@ export default class API {
 	 * @param {string} platform The name of the platform to search for
 	 * @returns {Promise<number | null>} The ID of the closest matching platform, or null if not found
 	 */
-	public async getPlatformId(platform: string): Promise<number | null> {
+	private async getPlatformId(platform: string): Promise<number | null> {
 		const key: string | null = await this.retrieveApiKey();
 
 		if (!key) {
 			return null;
 		}
 
+		// Formatting the platform name to improve the chances of a successful match
+
+		const formattedPlatform: string = this.platformFormatter(platform);
+
+		// Checking cache first
+
+		if (this.platformIdCache[formattedPlatform]) {
+			return this.platformIdCache[formattedPlatform];
+		}
+
 		try {
 			const res: Response = await fetch(
-				`${this.apiUrl}/Platforms/ByPlatformName?apikey=${key}&name=${encodeURIComponent(platform)}`,
+				`${this.apiUrl}/Platforms/ByPlatformName?apikey=${key}&name=${encodeURIComponent(formattedPlatform)}`,
 			);
 
 			if (res.ok) {
@@ -176,14 +238,19 @@ export default class API {
 					(p: { name: string; id: number; alias: string }): string => p.name,
 				);
 
-				const match: string = closest(platform, platformNames);
-
-				return (
+				const match: string = closest(formattedPlatform, platformNames);
+				const found: number | null =
 					platforms.find(
 						(p: { name: string; id: number; alias: string }): boolean =>
 							p.name === match,
-					)?.id || null
-				);
+					)?.id || null;
+
+				if (found) {
+					this.platformIdCache[formattedPlatform] = found;
+					this.storeCachePlatform();
+				}
+
+				return found;
 			} else {
 				this.logger.add(`Error fetching platform: ${res.statusText}`, 'error');
 				return null;
@@ -201,7 +268,7 @@ export default class API {
 	 * @param {string} gameName The name of the game to search for
 	 * @returns {Promise<number | null>} The ID of the closest matching game, or null if not found
 	 */
-	public async getGameByName(
+	private async getGameByName(
 		platformId: number,
 		gameName: string,
 	): Promise<number | null> {
@@ -211,9 +278,21 @@ export default class API {
 			return null;
 		}
 
+		// Formatting the game name to improve the chances of a successful match
+
+		const formattedGameName: string = this.gameFormatter(gameName);
+
+		// Checking cache first
+
+		const cacheKey: string = `${platformId}-${formattedGameName}`;
+
+		if (this.gameIdCache[cacheKey]) {
+			return this.gameIdCache[cacheKey];
+		}
+
 		try {
 			const res: Response = await fetch(
-				`${this.apiUrl}/Games/ByGameName?apikey=${key}&filter[platform]=${platformId}&name=${encodeURIComponent(gameName)}`,
+				`${this.apiUrl}/Games/ByGameName?apikey=${key}&filter[platform]=${platformId}&name=${encodeURIComponent(formattedGameName)}`,
 			);
 
 			if (res.ok) {
@@ -224,14 +303,19 @@ export default class API {
 					(g: { game_title: string; id: number }): string => g.game_title,
 				);
 
-				const match: string = closest(gameName, gameNames);
-
-				return (
+				const match: string = closest(formattedGameName, gameNames);
+				const found: number | null =
 					games.find(
 						(g: { game_title: string; id: number }): boolean =>
 							g.game_title === match,
-					)?.id || null
-				);
+					)?.id || null;
+
+				if (found) {
+					this.gameIdCache[cacheKey] = found;
+					this.storeCacheGame();
+				}
+
+				return found;
 			} else {
 				this.logger.add(`Error fetching game: ${res.statusText}`, 'error');
 				return null;
@@ -245,12 +329,34 @@ export default class API {
 
 	/**
 	 * Gets the image of a game by its ID and returns it as a base64 string
-	 * @param {number} gameId The ID of the game to fetch the image for
+	 * @param {string} platform The name of the platform the game belongs to
+	 * @param {string} game The name of the game to fetch the image for
 	 * @returns {Promise<{ base64: string, aspectRatio: string } | null>} The base64 string of the game image and its aspect ratio, or null if not found or an error occurs
 	 */
-	public async getImageByGameId(
-		gameId: number,
+	public async getImage(
+		platform: string,
+		game: string,
 	): Promise<{ base64: string; aspectRatio: string } | null> {
+		// Getting the platform ID
+
+		const platformId: number | null = await this.getPlatformId(platform);
+
+		if (platformId === null) {
+			this.logger.add(`Cannot fetch game image: platform not found`, 'error');
+			return null;
+		}
+
+		// Getting the game ID
+
+		const gameId: number | null = await this.getGameByName(platformId, game);
+
+		if (gameId === null) {
+			this.logger.add(`Cannot fetch game image: game not found`, 'error');
+			return null;
+		}
+
+		// Getting the image from the website
+
 		try {
 			const res: Response = await fetch(`${this.imagesUrl}/${gameId}-1.jpg`);
 
@@ -316,5 +422,42 @@ export default class API {
 			console.error('Error fetching game image:', err);
 			return null;
 		}
+	}
+
+	/**
+	 * Formats the platform string by removing unnecessary characters and formatting it to match the expected format for API queries
+	 * @param {string} platform The platform string to format
+	 * @returns {string} The formatted platform string
+	 */
+	private platformFormatter(platform: string): string {
+		const platformTemp: string =
+			platform.split('/')?.[1]?.trim()?.replace(/: /g, '')?.toLowerCase() ?? '';
+
+		const platformTemp2: string = platformTemp.includes('-')
+			? platformTemp.split('-')?.[1]?.trim()
+			: platformTemp;
+
+		return platformTemp2;
+	}
+
+	/**
+	 * Formats the game string by removing unnecessary characters and formatting it to match the expected format for API queries
+	 * @param {string} game The game string to format
+	 * @returns {string} The formatted game string
+	 */
+	private gameFormatter(game: string): string {
+		const gameNameTemp: string = game
+			.replace(/\([\w+\s-]+\)/g, '')
+			.replace(/\[\w+\]/g, '')
+			.replace(/\.[a-zA-Z0-9]+$/, '')
+			.replace(/,/g, '')
+			.trim()
+			.toLowerCase();
+
+		const gameNameTemp2: string = gameNameTemp.includes('-')
+			? gameNameTemp.split('-')?.[1]?.trim()
+			: gameNameTemp;
+
+		return gameNameTemp2;
 	}
 }

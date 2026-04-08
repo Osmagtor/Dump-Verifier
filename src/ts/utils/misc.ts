@@ -171,10 +171,14 @@ export function toggleArtwork(
 		$('#api').addClass('active');
 		$('.row').addClass('narrow');
 		$('#artwork').addClass('visible');
+		$('#console').addClass('narrow');
+		$('#images').addClass('visible');
 	} else {
 		$('#api').removeClass('active');
 		$('.row').removeClass('narrow');
 		$('#artwork').removeClass('visible');
+		$('#console').removeClass('narrow');
+		$('#images').removeClass('visible');
 	}
 
 	const parent: JQuery<HTMLDivElement> = $('#artwork');

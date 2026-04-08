@@ -20,7 +20,6 @@ const selectorGroup: SelectGroup = new SelectGroup('#system', '#game');
 const api: API = new API(logger);
 
 let loading: any;
-let platformIdLast: number | null = null;
 let apiExists: boolean = false;
 
 // LISTENERS
@@ -203,10 +202,6 @@ $('#system').on('change', async (): Promise<void> => {
 	const systems: systemData[] = downloader._systems;
 	await selectorGroup.updateSelects(systems);
 
-	// Clearing the platformIdLast variable to fetch the new platform ID when a new system is selected
-
-	platformIdLast = null;
-
 	// Removing the artwork when changing the system
 
 	toggleArtwork(apiExists, null, null, null);
@@ -217,53 +212,17 @@ $('#system').on('change', async (): Promise<void> => {
 });
 
 $('#game').on('change', async (): Promise<void> => {
-	const system: string = selectorGroup._selectSystemsText;
+	const platform: string = selectorGroup._selectSystemsText;
 	const game: string = selectorGroup._selectGamesValue;
 
-	if (system && game) {
-		let platformId: number | null = platformIdLast;
+	if (platform && game) {
+		const imgData: { base64: string; aspectRatio: string } | null =
+			await api.getImage(platform, game);
 
-		if (platformIdLast === null) {
-			const platformTemp: string =
-				system.split('/')?.[1]?.trim()?.replace(/: /g, '')?.toLowerCase() ?? '';
-
-			const platformTemp2: string = platformTemp.includes('-')
-				? platformTemp.split('-')?.[1]?.trim()
-				: platformTemp;
-
-			platformId = await api.getPlatformId(platformTemp2);
+		if (imgData?.base64 && imgData?.aspectRatio) {
+			toggleArtwork(true, imgData.base64, game, imgData.aspectRatio);
 		} else {
-			platformId = platformIdLast;
-		}
-
-		if (platformId !== null) {
-			const gameNameTemp: string = game
-				.replace(/\([\w+\s-]+\)/g, '')
-				.replace(/\[\w+\]/g, '')
-				.replace(/\.[a-zA-Z0-9]+$/, '')
-				.replace(/,/g, '')
-				.trim()
-				.toLowerCase();
-
-			const gameNameTemp2: string = gameNameTemp.includes('-')
-				? gameNameTemp.split('-')?.[1]?.trim()
-				: gameNameTemp;
-
-			const gameId: number | null = await api.getGameByName(
-				platformId,
-				gameNameTemp2,
-			);
-
-			if (gameId !== null) {
-				const imgData: { base64: string; aspectRatio: string } | null =
-					await api.getImageByGameId(gameId);
-
-				if (imgData?.base64 && imgData?.aspectRatio) {
-					toggleArtwork(true, imgData.base64, game, imgData.aspectRatio);
-				} else {
-					toggleArtwork(apiExists, null, null, null);
-				}
-			}
+			toggleArtwork(apiExists, null, null, null);
 		}
 	}
 });
