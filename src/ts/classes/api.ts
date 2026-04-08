@@ -353,6 +353,42 @@ export default class API {
 	}
 
 	/**
+	 * Converts a blob to a base64 string and gets the aspect ratio of the image
+	 * @param {Blob} blob The blob to convert
+	 * @returns {Promise<{ base64: string, aspectRatio: string } | null>} The base64 string and aspect ratio, or null on error
+	 */
+	private async blobToBase64WithAspectRatio(
+		blob: Blob,
+	): Promise<{ base64: string; aspectRatio: string } | null> {
+		try {
+			const arrayBuffer: ArrayBuffer = await blob.arrayBuffer();
+			const uint8Array: Uint8Array = new Uint8Array(arrayBuffer);
+			const binaryString: string = String.fromCharCode.apply(
+				null,
+				Array.from(uint8Array),
+			);
+
+			const img: HTMLImageElement = new Image();
+
+			const aspectRatio: string = await new Promise<string>(
+				(resolve: (aspectRatio: string) => void): void => {
+					img.onload = (): void => resolve(`${img.width} / ${img.height}`);
+					img.onerror = (): void => resolve('1');
+					img.src = `data:image/jpeg;base64,${btoa(binaryString)}`;
+				},
+			);
+
+			return {
+				base64: btoa(binaryString),
+				aspectRatio: aspectRatio,
+			};
+		} catch (err: any) {
+			console.error('Error converting blob to base64:', err);
+			return null;
+		}
+	}
+
+	/**
 	 * Gets the image of a game by its ID and returns it as a base64 string
 	 * @param {string} platform The name of the platform the game belongs to
 	 * @param {string} game The name of the game to fetch the image for
@@ -392,66 +428,29 @@ export default class API {
 
 		// Getting the image from the website
 
+		const extensions: string[] = ['jpg', 'png'];
+
 		try {
-			const res: Response = await fetch(`${this.imagesUrl}/${gameId}-1.jpg`);
-
-			if (res.ok) {
-				const blob: Blob = await res.blob();
-				const arrayBuffer: ArrayBuffer = await blob.arrayBuffer();
-				const uint8Array: Uint8Array = new Uint8Array(arrayBuffer);
-				const binaryString: string = String.fromCharCode.apply(
-					null,
-					Array.from(uint8Array),
-				);
-
-				const img: HTMLImageElement = new Image();
-
-				const aspectRatio: string = await new Promise<string>(
-					(resolve: (aspectRatio: string) => void): void => {
-						img.onload = (): void => resolve(`${img.width} / ${img.height}`);
-						img.onerror = (): void => resolve('1');
-						img.src = `data:image/jpeg;base64,${btoa(binaryString)}`;
-					},
-				);
-
-				return {
-					base64: btoa(binaryString),
-					aspectRatio: aspectRatio,
-				};
-			} else {
-				const res: Response = await fetch(`${this.imagesUrl}/${gameId}-2.jpg`);
-
-				if (res.ok) {
-					const blob: Blob = await res.blob();
-					const arrayBuffer: ArrayBuffer = await blob.arrayBuffer();
-					const uint8Array: Uint8Array = new Uint8Array(arrayBuffer);
-					const binaryString: string = String.fromCharCode.apply(
-						null,
-						Array.from(uint8Array),
+			for (const ext of extensions) {
+				for (let i: number = 1; i <= 2; i++) {
+					const res: Response = await fetch(
+						`${this.imagesUrl}/${gameId}-${i}.${ext}`,
 					);
 
-					const img: HTMLImageElement = new Image();
+					if (res.ok) {
+						const blob: Blob = await res.blob();
+						const result: { base64: string; aspectRatio: string } | null =
+							await this.blobToBase64WithAspectRatio(blob);
 
-					const aspectRatio: string = await new Promise<string>(
-						(resolve: (aspectRatio: string) => void): void => {
-							img.onload = (): void => resolve(`${img.width} / ${img.height}`);
-							img.onerror = (): void => resolve('1');
-							img.src = `data:image/jpeg;base64,${btoa(binaryString)}`;
-						},
-					);
-
-					return {
-						base64: btoa(binaryString),
-						aspectRatio: aspectRatio,
-					};
-				} else {
-					this.logger.add(
-						`Error fetching game image: ${res.statusText}`,
-						'error',
-					);
-					return null;
+						if (result) {
+							return result;
+						}
+					}
 				}
 			}
+
+			this.logger.add('No valid image found', 'error');
+			return null;
 		} catch (err: any) {
 			this.logger.add('Error fetching game image', 'error');
 			console.error('Error fetching game image:', err);
