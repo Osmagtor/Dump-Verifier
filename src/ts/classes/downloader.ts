@@ -12,6 +12,7 @@ class Downloader {
 
 	private logger: Logger;
 	private cookies: string = '';
+	private requireAuthentication!: Record<string, boolean>;
 
 	/**
 	 * Getter for the list of systems with their corresponding DAT file paths
@@ -26,6 +27,44 @@ class Downloader {
 	 */
 	constructor(logger: Logger) {
 		this.logger = logger;
+		this.requireAuthentication = this.getRequireAuthentication();
+	}
+
+	/**
+	 * Gets the list of systems from Redump.org that require authentication from localStorage
+	 * @returns {Record<string, boolean>} An object where the keys are system names and the values indicate whether authentication is required
+	 */
+	private getRequireAuthentication(): Record<string, boolean> {
+		try {
+			const requireAuthenticationString: string | null = localStorage.getItem(
+				'requireAuthentication',
+			);
+
+			if (requireAuthenticationString) {
+				return JSON.parse(requireAuthenticationString);
+			}
+		} catch (err: any) {
+			console.error('Error parsing requireAuthentication:', err);
+		}
+
+		return {};
+	}
+
+	/**
+	 * Stores the list of systems from Redump.org that require authentication in localStorage
+	 * @param {Record<string, boolean>} requireAuthentication An object where the keys are system names and the values indicate whether authentication is required
+	 */
+	private storeRequireAuthentication(
+		requireAuthentication: Record<string, boolean>,
+	): void {
+		try {
+			localStorage.setItem(
+				'requireAuthentication',
+				JSON.stringify(requireAuthentication),
+			);
+		} catch (err: any) {
+			console.error('Error storing requireAuthentication:', err);
+		}
 	}
 
 	/**
@@ -222,7 +261,11 @@ class Downloader {
 				).electron.ipcRenderer.invoke('checkFile', jsonFileName, folder);
 
 				if (!exists) {
-					const dataFetched: ArrayBuffer | undefined = await this.fetch(url);
+					let dataFetched: ArrayBuffer | undefined;
+
+					if (!this.requireAuthentication[baseName]) {
+						dataFetched = await this.fetch(url + datFileName);
+					}
 
 					if (dataFetched) {
 						const xmlText: string | undefined =
@@ -273,9 +316,17 @@ class Downloader {
 								'It probably requires authentication and dumper status',
 								'error',
 							);
+
+							this.requireAuthentication[baseName] = true;
+							this.storeRequireAuthentication(this.requireAuthentication);
 						}
-					} else {
+					} else if (!this.requireAuthentication[baseName]) {
 						this.logger.add(`Failed to fetch files from "${url}"`, 'error');
+					} else {
+						this.logger.add(
+							`Skipping "${datFileName}" as it requires authentication and dumper status`,
+							'error',
+						);
 					}
 				} else {
 					this.logger.add(
