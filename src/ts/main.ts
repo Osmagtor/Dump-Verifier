@@ -17,9 +17,9 @@ import keytar from 'keytar';
 
 let baseDir: string;
 
-let winMain: Window = new Window('main', app);
-let winApi: Window = new Window('api', app);
-let winLogin: Window = new Window('login', app);
+const winMain: Window = new Window('main', app);
+const winApi: Window = new Window('api', app);
+const winLogin: Window = new Window('login', app);
 
 if (process.platform === 'win32') {
 	baseDir = process.cwd();
@@ -105,7 +105,7 @@ void app.whenReady().then((): void => {
 
 			ipcMain.handle(
 				'setApiKey',
-				async (_: IpcMainInvokeEvent, key: string): Promise<void> => {
+				(_: IpcMainInvokeEvent, key: string): void => {
 					ipcMain.removeHandler('setApiKey');
 
 					winApi.close();
