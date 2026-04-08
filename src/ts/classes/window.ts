@@ -36,7 +36,7 @@ export default class Window {
 			} else if (process.platform === 'darwin') {
 				res = { width: 585, height: 545 };
 			} else {
-				res = { width: 585, height: 490 };
+				res = { width: 585, height: 510 };
 			}
 		} else if (this.type === 'api') {
 			res = { width: 300, height: 160 };
