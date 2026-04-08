@@ -466,7 +466,13 @@ export default class API {
 	 */
 	private platformFormatter(platform: string): string {
 		const platformTemp: string =
-			platform.split('/')?.[1]?.trim()?.replace(/: /g, '')?.toLowerCase() ?? '';
+			platform
+				.split('/')?.[1]
+				?.trim()
+				?.replace(/: /g, '')
+				?.replace(/\([\w+\s-,]+\)/g, '')
+				?.replace(/\[\w+\]/g, '')
+				?.toLowerCase() ?? '';
 
 		const platformTemp2: string = platformTemp.includes('-')
 			? platformTemp.split('-')?.[1]?.trim()
