@@ -60,8 +60,10 @@ export default class SelectGroup {
 	 */
 	public initialize(systems: systemData[], games: data[]): void {
 		if (this.selectSystems) {
-			this.selectSystems.clearOptions();
-			this.selectSystems.addOptions(systems);
+			if (systems.length) {
+				this.selectSystems.clearOptions();
+				this.selectSystems.addOptions(systems);
+			}
 		} else {
 			this.selectSystems = new TomSelect(this.selectorSystems, {
 				maxItems: 1,

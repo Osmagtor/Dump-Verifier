@@ -204,8 +204,7 @@ $('#system').on('change', async (): Promise<void> => {
 
 	// Updating the games select element based on the selected system
 
-	const systems: systemData[] = downloader._systems;
-	await selectorGroup.updateSelects(systems);
+	await selectorGroup.updateSelects([]);
 
 	// Removing the artwork when changing the system
 
