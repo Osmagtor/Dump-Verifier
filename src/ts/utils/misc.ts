@@ -3,6 +3,7 @@ import Logger from '../classes/logger.js';
 import $ from 'jquery';
 import tippy from 'tippy.js';
 
+let tippySelected: any = null;
 let tippies: any[] = [];
 
 /**
@@ -194,6 +195,11 @@ export function toggleArtwork(
 	const parent: JQuery<HTMLDivElement> = $('#artwork');
 
 	if (image !== null && alt !== null && aspectRatio !== null) {
+		if (tippySelected) {
+			tippySelected.destroy();
+			tippySelected = null;
+		}
+
 		parent.css('aspect-ratio', aspectRatio);
 
 		parent.find('p').removeClass('visible');
@@ -203,6 +209,24 @@ export function toggleArtwork(
 			.addClass('visible')
 			.attr('alt', alt)
 			.attr('src', `data:image/jpeg;base64,${image}`);
+
+		// Adding a tippy tooltip to the image with the alt text
+
+		// @ts-expect-error Not being resolved by TypeScript
+		tippySelected = tippy(parent.find('img')[0], {
+			content: `
+				<div>
+					<img 
+						src="data:image/jpeg;base64,${image}" 
+						alt="${alt}" 
+					\>
+				</div>`,
+			allowHTML: true,
+			arrow: true,
+			placement: 'left',
+			animation: 'scale-subtle',
+			trigger: 'mouseenter',
+		});
 	} else {
 		parent.css('aspect-ratio', '');
 
