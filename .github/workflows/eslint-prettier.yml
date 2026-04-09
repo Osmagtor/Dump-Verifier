@@ -9,6 +9,13 @@ on:
       - reopened
     branches:
       - main
+    paths:
+      - 'src/**'
+      - 'dist/html/**'
+      - 'esbuild.config.ts'
+      - 'eslint.config.ts'
+      - 'forge.config.ts'
+      - 'tsconfig.json'
   workflow_dispatch:
 
 concurrency:
