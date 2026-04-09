@@ -123,7 +123,11 @@ body {
 
 		> #images {
 			overflow-x: hidden;
-			overflow-y: scroll;
+			overflow-y: hidden;
+
+			&.overflow {
+				overflow-y: scroll;
+			}
 
 			scrollbar-width: thin;
 			scrollbar-color: $colorButtonFocus transparent;

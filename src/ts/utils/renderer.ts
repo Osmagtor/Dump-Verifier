@@ -280,11 +280,17 @@ $('#files').on('click', async (ev: JQuery.Event): Promise<void> => {
 $('#redump').on('click', async (ev: JQuery.Event): Promise<void> => {
 	ev.preventDefault();
 
+	// Disabling the form while processing
+
 	toggleForm(false, selectorGroup);
 
-	const folder: string = 'dat/redump';
+	// Clearing the list of Redump systems that require authentication from localStorage
+
+	downloader.clearRequireAuthentication();
 
 	// Calling the deleteDatDirectoryContents IPC handler to delete the contents of the dat/redump directory
+
+	const folder: string = 'dat/redump';
 
 	await (window as any).electron.ipcRenderer.invoke(
 		'deleteDatDirectoryContents',
@@ -297,6 +303,8 @@ $('#redump').on('click', async (ev: JQuery.Event): Promise<void> => {
 	// Calling the initRedump function
 
 	await downloader.initRedump();
+
+	// Enabling the form after processing
 
 	toggleForm(true, selectorGroup);
 });

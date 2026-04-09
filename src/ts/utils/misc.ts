@@ -262,6 +262,10 @@ export function addImageToVerified(
 		.addClass('visible')
 		.addClass(!img ? 'no-image' : '');
 
+	// Adding the "overflow" class to the container
+
+	container.addClass('overflow');
+
 	// Removing the placeholder text
 
 	container.find('p').removeClass('visible');
@@ -288,13 +292,19 @@ export function addImageToVerified(
  * Clears all verified game images from the verified images container and shows the placeholder text
  */
 export function clearVerifiedImages(): void {
+	const container: JQuery<HTMLDivElement> = $('#images');
+
 	// Removing all images from the container
 
-	$('#images').find('>div').remove();
+	container.find('>div').remove();
 
 	// Showing the placeholder text
 
-	$('#images').find('p').addClass('visible');
+	container.find('p').addClass('visible');
+
+	// Removing the "overflow" class from the container
+
+	container.removeClass('overflow');
 
 	// Destroying all tippy instances to prevent memory leaks
 

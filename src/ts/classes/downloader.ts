@@ -31,6 +31,14 @@ class Downloader {
 	}
 
 	/**
+	 * Clears the list of systems that require authentication from localStorage
+	 */
+	public clearRequireAuthentication(): void {
+		this.requireAuthentication = {};
+		this.storeRequireAuthentication(this.requireAuthentication);
+	}
+
+	/**
 	 * Gets the list of systems from Redump.org that require authentication from localStorage
 	 * @returns {Record<string, boolean>} An object where the keys are system names and the values indicate whether authentication is required
 	 */
