@@ -1,3 +1,9 @@
+# v2.0.1
+
+- Better alignment of some UI elements.
+- The cache of failed `Redump.org` `.dat` file URLS is now reset when requesting the `Redump.org` files again.
+- When hovering over the cover art of the selected game, a tooltip is shown with a larger preview of the cover art.
+
 # v2.0.0
 
 - Major refactoring of the code for better readability.
@@ -25,4 +31,4 @@
 
 # v1.0.0
 
-- Initial release
+- Initial release.
