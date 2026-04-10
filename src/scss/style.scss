@@ -614,6 +614,7 @@ body {
 				}
 
 				> .item {
+					max-width: 330px;
 					overflow: hidden;
 					text-wrap-mode: nowrap;
 					text-overflow: ellipsis;
