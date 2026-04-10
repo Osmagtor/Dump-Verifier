@@ -1,3 +1,8 @@
+# v2.0.2
+
+- Proper responsive UI. The UI should now be identical across platforms.
+- Minor bug fixes.
+
 # v2.0.1
 
 - Better alignment of some UI elements.
