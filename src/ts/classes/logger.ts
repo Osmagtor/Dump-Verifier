@@ -2,7 +2,7 @@ import $ from 'jquery';
 
 export default class Logger {
 	private text: string = '';
-	private element: JQuery<HTMLTextAreaElement>;
+	private readonly element: JQuery<HTMLTextAreaElement>;
 
 	/**
 	 * Getter for the stored console log text

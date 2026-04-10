@@ -7,10 +7,10 @@ export default class API {
 	private static readonly service: string = 'GamesDBAPI';
 	private static readonly account: string = 'apiKey';
 
-	private apiUrl: string = 'https://api.thegamesdb.net/v1';
-	private imagesUrl: string =
+	private readonly apiUrl: string = 'https://api.thegamesdb.net/v1';
+	private readonly imagesUrl: string =
 		'https://cdn.thegamesdb.net/images/thumb/boxart/front';
-	private logger: Logger;
+	private readonly logger: Logger;
 
 	private platformIdCache: { [key: string]: number } = {};
 	private gameIdCache: { [key: string]: number } = {};
@@ -304,7 +304,7 @@ export default class API {
 									return platforms[i].id;
 								}
 							})
-							.filter((v): v is number => !!v)[0] ?? null;
+							.filter((v: number | undefined): v is number => !!v)[0] ?? null;
 
 					if (found) {
 						this.platformIdCache[formattedPlatform] = found;
@@ -379,7 +379,7 @@ export default class API {
 
 		for (const v of [...valueBrackets, ...valueParentheses]) {
 			let continent: string = '';
-			let country: ICountry | undefined = Object.values(countries).find(
+			const country: ICountry | undefined = Object.values(countries).find(
 				(c: ICountry): boolean =>
 					c.name.toLowerCase() === v.toLowerCase() ||
 					c.native.toLowerCase() === v.toLowerCase(),
@@ -506,6 +506,10 @@ export default class API {
 					const data: apiResponseGames = await res.json();
 					const games: dataGames[] = data.data.games;
 
+					if (!games.length) {
+						continue;
+					}
+
 					const gameNames: string[] = games.map((g: dataGames): string =>
 						g.game_title.toLowerCase().replace(/\s/g, ''),
 					);
@@ -526,7 +530,15 @@ export default class API {
 									}
 								}
 							})
-							.filter((v): v is number => !!v)[0] ?? null;
+							.filter((v: number | undefined): v is number => !!v)[0] ??
+						gameNames
+							.map((g: string, i: number): number | undefined => {
+								if (g === match) {
+									return games[i].id;
+								}
+							})
+							.filter((v: number | undefined): v is number => !!v)[0] ??
+						null;
 
 					if (found) {
 						this.gameIdCache[cacheKey] = found;
@@ -566,8 +578,18 @@ export default class API {
 
 			const aspectRatio: string = await new Promise<string>(
 				(resolve: (aspectRatio: string) => void): void => {
-					img.onload = (): void => resolve(`${img.width} / ${img.height}`);
-					img.onerror = (): void => resolve('1');
+					/**
+					 *
+					 */
+					img.onload = (): void => {
+						resolve(`${img.width} / ${img.height}`);
+					};
+					/**
+					 *
+					 */
+					img.onerror = (): void => {
+						resolve('1');
+					};
 					img.src = `data:image/jpeg;base64,${btoa(binaryString)}`;
 				},
 			);
@@ -601,7 +623,7 @@ export default class API {
 		const platformId: number | null = await this.getPlatformId(platform);
 
 		if (platformId === null) {
-			this.logger.add(`Not found: platform "${platform}"`, 'error');
+			this.logger.add(`Image not found for platform "${platform}"`, 'error');
 			return null;
 		}
 
@@ -610,7 +632,7 @@ export default class API {
 		const gameId: number | null = await this.getGameByName(platformId, game);
 
 		if (gameId === null) {
-			this.logger.add(`Not found: game "${game}"`, 'error');
+			this.logger.add(`Image not found for game "${game}"`, 'error');
 			return null;
 		}
 

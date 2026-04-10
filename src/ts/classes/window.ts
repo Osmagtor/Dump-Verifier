@@ -3,8 +3,8 @@ import * as path from 'path';
 
 export default class Window {
 	private window!: BrowserWindow | null;
-	private app!: Electron.App;
-	private type!: 'main' | 'api' | 'login';
+	private readonly app!: Electron.App;
+	private readonly type!: 'main' | 'api' | 'login';
 
 	/**
 	 * Getter for the BrowserWindow instance
