@@ -26,22 +26,26 @@ export interface apiResponsePlatforms extends apiResponse {
 
 export interface apiDataGames {
 	count: number;
-	games: {
-		id: number;
-		game_title: string;
-		release_date: string;
-		platform: number;
-		region_id: number;
-		country_id: number;
-		developers: number[];
-	}[];
+	games: dataGames[];
+}
+
+export interface dataGames {
+	id: number;
+	game_title: string;
+	release_date: string;
+	platform: number;
+	region_id: number;
+	country_id: number;
+	developers: number[];
 }
 
 export interface apiDataPlatforms {
 	count: number;
-	platforms: {
-		id: number;
-		name: string;
-		alias: string;
-	}[];
+	platforms: dataPlatforms[];
+}
+
+export interface dataPlatforms {
+	id: number;
+	name: string;
+	alias: string;
 }

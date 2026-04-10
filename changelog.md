@@ -1,3 +1,14 @@
+# v2.0.2
+
+- Proper responsive UI. The UI should now be identical across platforms.
+- Thanks to help from @pete-oconnell, the cover art from some games come be retrieved based on the region are from. The current solution is functional but somewhat hacky. While the Games DB API provides a region ID for each game entry, the `Redump` and `No-Intro` entries do not. To guess the region that a game from the `.dat` files belongs to:
+  1. Any country names within parentheses in the game name are extracted using regular expressions.
+  2. The continent of each country names is obtained using the [`countries-list`](https://www.npmjs.com/package/countries-list) NPM library.
+  3. Each continent is assigned a region ID.
+- Needless to say, the solution described above is not perfect and may not always work. Sometimes this may be due to a lacking entry in the Games DB, but in other cases it may not. Feel free to report any issues so they may be looked into.
+- A button to clear the API cache has been added. If you believe that a game's cover art is not being fetched correctly because it may have incorrectly been cached in a previous version of the app, this button should help with that.
+- Minor bug fixes.
+
 # v2.0.1
 
 - Better alignment of some UI elements.

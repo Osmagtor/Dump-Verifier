@@ -158,6 +158,7 @@ $(document).ready(async (): Promise<void> => {
 $('#api').on('click', async (ev: JQuery.Event): Promise<void> => {
 	ev.preventDefault();
 	const success: boolean = await api.getKey();
+	apiExists = await api.existsApiKey();
 	toggleArtwork(success, null, null, null);
 });
 
@@ -197,6 +198,14 @@ $('#clear').on('click', (ev: JQuery.Event): void => {
 	clearVerifiedImages();
 });
 
+$('#cache').on('click', async (ev: JQuery.Event): Promise<void> => {
+	ev.preventDefault();
+
+	// Clearing the cache from the API class
+
+	api.clearAllCache();
+});
+
 $('#system').on('change', async (): Promise<void> => {
 	// Disabling the form while processing
 
@@ -204,8 +213,7 @@ $('#system').on('change', async (): Promise<void> => {
 
 	// Updating the games select element based on the selected system
 
-	const systems: systemData[] = downloader._systems;
-	await selectorGroup.updateSelects(systems);
+	await selectorGroup.updateSelects([]);
 
 	// Removing the artwork when changing the system
 

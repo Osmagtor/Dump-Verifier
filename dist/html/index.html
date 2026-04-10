@@ -15,42 +15,54 @@
 
 <body>
     <form>
-        <div class="row">
-            <label for="files">File</label>
-            <button id="files">Select file(s)</button>
-            <input type="hidden" name="filepaths" id="filepaths">
+
+        <div id="floating-container">
+            <div id="api"></div>
+            <div id="credentials"></div>
+            <div id="help">?</div>
         </div>
 
-        <div class="row">
-            <label for="system">System</label>
-            <input id="system" name="system" />
-        </div>
+        <header>
+            <div id="row-container">
+                <div class="row">
+                    <label for="files">File</label>
+                    <button id="files">Select file(s)</button>
+                    <input type="hidden" name="filepaths" id="filepaths">
+                </div>
 
-        <div class="row">
-            <label for="game">Game</label>
-            <input id="game" name="game" />
-        </div>
+                <div class="row">
+                    <label for="system">System</label>
+                    <input id="system" name="system" />
+                </div>
 
-        <div id="artwork">
-            <p class="visible">No selected game</p>
-            <img src="" alt="" />
-        </div>
+                <div class="row">
+                    <label for="game">Game</label>
+                    <input id="game" name="game" />
+                </div>
+            </div>
+            <div id="artwork-container">
+                <div id="artwork">
+                    <p class="visible">No selected game</p>
+                    <img src="" alt="" />
+                </div>
+            </div>
+        </header>
 
-        <div id="api"></div>
-        <div id="credentials"></div>
-        <div id="help">?</div>
+        <main>
+            <div id="console"></div>
+            <div id="images">
+                <p class="visible">No verified games</p>
+            </div>
+        </main>
 
-        <div id="console"></div>
-        <div id="images">
-            <p class="visible">No verified games</p>
-        </div>
-
-        <button id="clear">Clear console</button>
-        <button id="log">Save log</button>
-        <button id="redump">Update Redump</button>
-        <button id="no-intro">Upload No-intro</button>
-
-        <input type="submit" value="Verify">
+        <footer>
+            <button id="clear">Clear console</button>
+            <button id="log">Save log</button>
+            <button id="redump">Update Redump</button>
+            <button id="no-intro">Upload No-intro</button>
+            <button id="cache">Clear cache</button>
+            <input type="submit" value="Verify">
+        </footer>
     </form>
 </body>
 

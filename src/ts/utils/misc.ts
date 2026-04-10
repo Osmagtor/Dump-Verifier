@@ -17,7 +17,7 @@ export function initializeThemeVariables(theme: string): void {
 
 	document.documentElement.style.setProperty(
 		'--os-accent-color',
-		dark ? '#0078d4' : '#0078d4',
+		dark ? '#868686' : '#5f5f5f',
 	);
 	document.documentElement.style.setProperty(
 		'--font',
@@ -178,61 +178,59 @@ export function toggleArtwork(
 	alt: string | null,
 	aspectRatio: string | null,
 ): void {
-	if (show) {
-		$('#api').addClass('active');
-		$('.row').addClass('narrow');
-		$('#artwork').addClass('visible');
-		$('#console').addClass('narrow');
-		$('#images').addClass('visible');
-	} else {
-		$('#api').removeClass('active');
-		$('.row').removeClass('narrow');
-		$('#artwork').removeClass('visible');
-		$('#console').removeClass('narrow');
-		$('#images').removeClass('visible');
-	}
-
 	const parent: JQuery<HTMLDivElement> = $('#artwork');
 
-	if (image !== null && alt !== null && aspectRatio !== null) {
-		if (tippySelected) {
-			tippySelected.destroy();
-			tippySelected = null;
-		}
+	if (show) {
+		$('#api').addClass('active');
+		$('#images').addClass('visible');
+		parent.addClass('visible');
 
-		parent.css('aspect-ratio', aspectRatio);
+		if (image !== null && alt !== null && aspectRatio !== null) {
+			if (tippySelected) {
+				tippySelected.destroy();
+				tippySelected = null;
+			}
 
-		parent.find('p').removeClass('visible');
+			parent.find('p').removeClass('visible');
 
-		parent
-			.find('img')
-			.addClass('visible')
-			.attr('alt', alt)
-			.attr('src', `data:image/jpeg;base64,${image}`);
+			parent
+				.find('img')
+				.addClass('visible')
+				.css('aspect-ratio', aspectRatio)
+				.attr('alt', alt)
+				.attr('src', `data:image/jpeg;base64,${image}`);
 
-		// Adding a tippy tooltip to the image with the alt text
+			// Adding a tippy tooltip to the image with the alt text
 
-		// @ts-expect-error Not being resolved by TypeScript
-		tippySelected = tippy(parent.find('img')[0], {
-			content: `
+			// @ts-expect-error Not being resolved by TypeScript
+			tippySelected = tippy(parent.find('img')[0], {
+				content: `
 				<div>
 					<img 
 						src="data:image/jpeg;base64,${image}" 
 						alt="${alt}" 
 					\>
 				</div>`,
-			allowHTML: true,
-			arrow: true,
-			placement: 'left',
-			animation: 'scale-subtle',
-			trigger: 'mouseenter',
-		});
+				allowHTML: true,
+				arrow: true,
+				placement: 'left',
+				animation: 'scale-subtle',
+				trigger: 'mouseenter',
+			});
+		} else {
+			parent
+				.find('img')
+				.css('aspect-ratio', '')
+				.removeClass('visible')
+				.attr('alt', '')
+				.attr('src', '');
+
+			parent.find('p').addClass('visible');
+		}
 	} else {
-		parent.css('aspect-ratio', '');
-
-		parent.find('img').removeClass('visible').attr('alt', '').attr('src', '');
-
-		parent.find('p').addClass('visible');
+		$('#api').removeClass('active');
+		$('#images').removeClass('visible');
+		parent.removeClass('visible');
 	}
 }
 

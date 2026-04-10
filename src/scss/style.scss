@@ -43,23 +43,6 @@ body {
 	overflow: hidden;
 	background-color: $colorBackground;
 
-	.tippy-content {
-		> div {
-			width: 100%;
-			height: 100%;
-			max-width: 330px;
-
-			overflow: hidden;
-			margin-top: 4px;
-
-			> img {
-				width: 100%;
-				height: 100%;
-				border-radius: 4px;
-			}
-		}
-	}
-
 	> form {
 		display: flex;
 		flex-direction: column;
@@ -73,48 +56,205 @@ body {
 
 		position: relative;
 
-		> div {
-			&:not(#artwork) {
-				margin: 10px;
+		> #floating-container {
+			position: absolute;
+			top: 20px;
+			right: 20px;
 
-				&.row {
-					display: grid;
-					grid-template-columns: 65px 480px;
-					align-items: center;
-					justify-content: center;
+			width: 100px;
 
-					&.narrow {
-						.ts-wrapper {
-							max-width: 80%;
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+
+			[id^='tippy'] {
+				width: 350px;
+			}
+
+			#help {
+				color: $colorHelp;
+				font-weight: bolder;
+
+				border-radius: 50%;
+				border: 2px solid $colorHelp;
+
+				width: 23px;
+				height: 23px;
+
+				display: flex;
+				justify-content: center;
+				align-items: center;
+
+				cursor: help;
+			}
+
+			#api {
+				width: 30px;
+				height: 30px;
+				font-size: 20px;
+
+				display: flex;
+				justify-content: center;
+				align-items: center;
+
+				background-image: url('../../img/api.svg');
+				background-size: contain;
+				background-repeat: no-repeat;
+
+				filter: grayscale(1);
+
+				cursor: pointer;
+
+				&.active {
+					filter: grayscale(0);
+				}
+			}
+
+			#credentials {
+				width: 22px;
+				height: 22px;
+				font-size: 20px;
+
+				display: flex;
+				justify-content: center;
+				align-items: center;
+
+				background-image: url('../../img/key.svg');
+				background-size: contain;
+				background-repeat: no-repeat;
+
+				filter: grayscale(1);
+
+				cursor: pointer;
+
+				&.active {
+					filter: grayscale(0);
+				}
+			}
+		}
+
+		> header,
+		> main,
+		> footer {
+			width: 100%;
+			padding: 10px;
+
+			display: grid;
+			grid-template-columns: 1fr;
+
+			&:has(#artwork.visible),
+			&:has(#images.visible) {
+				grid-template-columns: 5fr 1fr;
+				gap: 14px;
+			}
+
+			> div {
+				&#row-container {
+					> .row {
+						display: grid;
+						grid-template-columns: 1fr 5fr;
+						align-items: center;
+						justify-content: center;
+
+						&:not(:first-child):not(:last-child) {
+							margin-bottom: 20px;
+							margin-top: 20px;
+						}
+
+						label {
+							font-weight: bolder;
+							margin-right: 10px;
 						}
 					}
 				}
 
-				> label {
-					font-weight: bolder;
-					margin-right: 10px;
+				&#artwork-container {
+					display: flex;
+					flex-direction: column;
+					justify-content: flex-end;
+					align-items: center;
+
+					height: 100%;
+
+					> #artwork {
+						display: none;
+
+						border: solid 1px $colorConsoleBorder;
+
+						width: 100%;
+						aspect-ratio: 1;
+
+						color: $colorFont;
+
+						&.visible {
+							display: flex;
+							justify-content: center;
+							align-items: center;
+						}
+
+						&:has(img.visible) {
+							border: none;
+						}
+
+						> * {
+							display: none;
+
+							&.visible {
+								display: block;
+							}
+						}
+
+						> p {
+							padding: 5px;
+							text-align: center;
+						}
+
+						> img {
+							max-height: 86px;
+							max-width: 100%;
+
+							opacity: 1;
+							transition: all 200ms;
+
+							&:hover {
+								cursor: pointer;
+								opacity: 0.5;
+							}
+
+							&.visible {
+								display: block;
+							}
+						}
+					}
 				}
 			}
 
-			&#artwork {
-				display: none;
+			> #images,
+			> #console {
+				height: 100%;
 
-				position: absolute;
-				right: 20px;
-				top: 71px;
-				z-index: 1;
+				scrollbar-width: thin;
+				scrollbar-color: $colorButtonFocus transparent;
 
 				border: solid 1px $colorConsoleBorder;
+			}
 
-				height: 81px;
-				max-width: 81px;
-				aspect-ratio: 1;
+			> #images {
+				position: relative;
 
-				color: $colorFont;
+				overflow-x: hidden;
+				overflow-y: hidden;
+
+				&.overflow {
+					overflow-y: scroll;
+				}
+
+				display: none;
 
 				&.visible {
 					display: flex;
-					justify-content: center;
+					flex-direction: column;
+					justify-content: flex-start;
 					align-items: center;
 				}
 
@@ -129,278 +269,261 @@ body {
 				> p {
 					padding: 5px;
 					text-align: center;
-				}
-
-				> img {
-					width: 100%;
-					height: 100%;
-
-					opacity: 1;
-					transition: all 200ms;
-
-					&:hover {
-						cursor: pointer;
-						opacity: 0.5;
-					}
-				}
-			}
-		}
-
-		> #images {
-			overflow-x: hidden;
-			overflow-y: hidden;
-
-			&.overflow {
-				overflow-y: scroll;
-			}
-
-			scrollbar-width: thin;
-			scrollbar-color: $colorButtonFocus transparent;
-
-			border: solid 1px $colorConsoleBorder;
-
-			width: 81px;
-			height: 270px;
-
-			position: absolute;
-			top: 161px;
-			right: 10px;
-
-			display: none;
-
-			&.visible {
-				display: flex;
-				flex-direction: column;
-				justify-content: flex-start;
-				align-items: center;
-			}
-
-			> * {
-				display: none;
-
-				&.visible {
-					display: block;
-				}
-			}
-
-			> p {
-				padding: 5px;
-				text-align: center;
-
-				position: absolute;
-				top: 50%;
-				left: 50%;
-				transform: translate(-50%, -50%);
-			}
-
-			> div {
-				position: relative;
-				margin-bottom: 5px;
-
-				min-height: 71px;
-				max-width: 100%;
-
-				aspect-ratio: 1;
-
-				&:hover {
-					cursor: pointer;
-					opacity: 0.8;
-
-					> img {
-						filter: blur(0px) brightness(1);
-					}
-
-					> div {
-						opacity: 0;
-					}
-				}
-
-				&.no-image {
-					background-color: $colorFont;
-
-					> img {
-						display: none;
-					}
-				}
-
-				> img {
-					transition: all 200ms;
-
-					filter: blur(1px) brightness(0.75);
-					opacity: 1;
-
-					width: 100%;
-					height: 100%;
-				}
-
-				> div {
-					transition: all 200ms;
-
-					pointer-events: none;
 
 					position: absolute;
 					top: 50%;
 					left: 50%;
+					transform: translate(-50%, -50%);
+				}
 
-					transform: translate(-50%, -50%) rotate(-45deg);
-					transform-origin: center;
+				> div {
+					position: relative;
+					margin-bottom: 5px;
 
-					font-weight: bolder;
+					max-width: 100%;
+
+					aspect-ratio: 1;
+
+					&:hover {
+						cursor: pointer;
+						opacity: 0.8;
+
+						> img {
+							filter: blur(0px) brightness(1);
+						}
+
+						> div {
+							opacity: 0;
+						}
+					}
+
+					&.no-image {
+						background-color: $colorFont;
+
+						> img {
+							display: none;
+						}
+					}
+
+					> img {
+						transition: all 200ms;
+
+						filter: blur(1px) brightness(0.75);
+						opacity: 1;
+
+						width: 100%;
+						height: 100%;
+					}
+
+					> div {
+						transition: all 200ms;
+
+						pointer-events: none;
+
+						position: absolute;
+						top: 50%;
+						left: 50%;
+
+						transform: translate(-50%, -50%) rotate(-45deg);
+						transform-origin: center;
+
+						font-weight: bolder;
+						font-size: 12px;
+						padding: 2.5px;
+
+						&.success {
+							color: $colorConsoleTextGreen;
+							border-radius: 5px;
+							border: solid 3px $colorConsoleTextGreen;
+						}
+
+						&.failure {
+							color: $colorConsoleTextRed;
+							border-radius: 5px;
+							border: solid 3px $colorConsoleTextRed;
+						}
+					}
+				}
+			}
+
+			> #console {
+				overflow-y: auto;
+				overflow-x: hidden;
+
+				font-size: 12px;
+
+				display: flex;
+				flex-direction: column;
+				justify-content: flex-start;
+				align-items: flex-start;
+
+				&:focus-visible {
+					outline: $outline;
+				}
+
+				> span {
+					overflow: hidden;
+					text-overflow: ellipsis;
+
+					&.blink {
+						animation: blink 1s ease-in-out 0s infinite;
+
+						@keyframes blink {
+							50% {
+								opacity: 0;
+							}
+
+							100% {
+								opacity: 1;
+							}
+						}
+					}
+				}
+
+				span,
+				i,
+				a {
 					font-size: 12px;
-					padding: 2.5px;
 
-					&.success {
-						color: $colorConsoleTextGreen;
-						border-radius: 5px;
-						border: solid 3px $colorConsoleTextGreen;
+					&.text {
+						&-success {
+							color: $colorConsoleTextGreen;
+
+							i,
+							a {
+								color: inherit;
+							}
+						}
+
+						&-error {
+							color: $colorConsoleTextRed;
+
+							i,
+							a {
+								color: inherit;
+							}
+						}
+
+						&-normal {
+							color: inherit;
+
+							i,
+							a {
+								color: inherit;
+							}
+						}
 					}
 
-					&.failure {
-						color: $colorConsoleTextRed;
-						border-radius: 5px;
-						border: solid 3px $colorConsoleTextRed;
+					.info {
+						float: right;
+
+						> .info__percentage {
+							&::after {
+								content: ' %';
+							}
+
+							&-success {
+								@extend .info__percentage;
+								color: $colorConsoleTextGreen;
+							}
+						}
+
+						> .info__loading {
+							&-success {
+								color: $colorConsoleTextGreen;
+							}
+						}
 					}
+
+					.progress-bar {
+						> .progress-bar__segment {
+							display: inline-block;
+
+							width: 10px;
+							height: 10px;
+
+							margin: 0px 1px;
+
+							background-color: $colorFont;
+
+							&-success {
+								@extend .progress-bar__segment;
+								background-color: $colorConsoleTextGreen;
+							}
+						}
+					}
+				}
+
+				> span {
+					padding: 2px 5px;
+					width: 100%;
+					min-height: 20px;
+
+					text-wrap: nowrap;
+
+					&:nth-child(odd) {
+						background-color: $colorConsoleAlternative;
+					}
+
+					&:nth-child(even) {
+						background-color: $colorConsole;
+					}
+				}
+			}
+
+			input[type='submit'] {
+				float: right;
+
+				color: white;
+				background-color: $colorSubmitNormal;
+
+				&:hover {
+					background-color: $colorSubmitHover;
+				}
+
+				&:active {
+					background-color: $colorSubmitFocus;
+				}
+
+				&:disabled {
+					background-color: $colorSubmitDisabled;
+					pointer-events: none;
+				}
+
+				&:focus-visible {
+					outline: $outline;
+				}
+
+				&:focus-visible {
+					outline: $outline;
 				}
 			}
 		}
 
-		> #console {
-			border: solid 1px $colorConsoleBorder;
-
-			overflow-y: auto;
-			overflow-x: hidden;
-
-			width: 545px;
+		> main {
 			height: 270px;
+			margin-top: 10px;
 
-			font-size: 12px;
-
-			display: flex;
-			flex-direction: column;
-			justify-content: flex-start;
-			align-items: flex-start;
-
-			scrollbar-width: thin;
-			scrollbar-color: $colorButtonFocus transparent;
-
-			margin-top: 15px;
-
-			&.narrow {
-				width: 450px;
-			}
-
-			&:focus-visible {
-				outline: $outline;
-			}
-
-			> span {
-				overflow: hidden;
-				text-overflow: ellipsis;
-
-				&.blink {
-					animation: blink 1s ease-in-out 0s infinite;
-
-					@keyframes blink {
-						50% {
-							opacity: 0;
-						}
-
-						100% {
-							opacity: 1;
-						}
-					}
-				}
-			}
-
-			span,
-			i,
-			a {
-				font-size: 12px;
-
-				&.text {
-					&-success {
-						color: $colorConsoleTextGreen;
-
-						i,
-						a {
-							color: inherit;
-						}
-					}
-
-					&-error {
-						color: $colorConsoleTextRed;
-
-						i,
-						a {
-							color: inherit;
-						}
-					}
-
-					&-normal {
-						color: inherit;
-
-						i,
-						a {
-							color: inherit;
-						}
-					}
-				}
-
-				.info {
-					float: right;
-
-					> .info__percentage {
-						&::after {
-							content: ' %';
-						}
-
-						&-success {
-							@extend .info__percentage;
-							color: $colorConsoleTextGreen;
-						}
-					}
-
-					> .info__loading {
-						&-success {
-							color: $colorConsoleTextGreen;
-						}
-					}
-				}
-
-				.progress-bar {
-					> .progress-bar__segment {
-						display: inline-block;
-
-						width: 10px;
-						height: 10px;
-
-						margin: 0px 1px;
-
-						background-color: $colorFont;
-
-						&-success {
-							@extend .progress-bar__segment;
-							background-color: $colorConsoleTextGreen;
-						}
-					}
-				}
-			}
-
-			> span {
-				padding: 2px 5px;
+			> input[type='text'] {
+				padding: 5px;
 				width: 100%;
-				min-height: 20px;
 
-				text-wrap: nowrap;
+				border-radius: 5px;
 
-				&:nth-child(odd) {
-					background-color: $colorConsoleAlternative;
-				}
+				color: $colorFont;
+				border-color: transparent;
+				background-color: $colorSelect;
 
-				&:nth-child(even) {
-					background-color: $colorConsole;
+				&:focus-visible {
+					outline: $outline;
 				}
 			}
+		}
+
+		> footer {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
 		}
 
 		input[type='submit'],
@@ -438,10 +561,6 @@ body {
 			&.delete {
 				color: white;
 
-				position: absolute;
-				bottom: 20px;
-				right: 135px;
-
 				background-color: $colorDeleteNormal;
 
 				&:hover {
@@ -465,79 +584,10 @@ body {
 					outline: $outline;
 				}
 			}
-		}
 
-		input[type='submit'] {
-			color: white;
-
-			position: absolute;
-			bottom: 20px;
-			right: 20px;
-
-			background-color: $colorSubmitNormal;
-
-			&:hover {
-				background-color: $colorSubmitHover;
+			&#files {
+				padding: 9px;
 			}
-
-			&:active {
-				background-color: $colorSubmitFocus;
-			}
-
-			&:disabled {
-				background-color: $colorSubmitDisabled;
-				pointer-events: none;
-			}
-
-			&:focus-visible {
-				outline: $outline;
-			}
-
-			&:focus-visible {
-				outline: $outline;
-			}
-		}
-
-		> input[type='text'] {
-			$margin: 10px;
-
-			padding: 5px;
-			margin: $margin;
-			width: calc(100% - calc(2 * $margin));
-
-			border-radius: 5px;
-
-			color: $colorFont;
-			border-color: transparent;
-			background-color: $colorSelect;
-
-			&:focus-visible {
-				outline: $outline;
-			}
-		}
-
-		#clear {
-			position: absolute;
-			bottom: 20px;
-			left: 20px;
-		}
-
-		#log {
-			position: absolute;
-			bottom: 20px;
-			left: 135px;
-		}
-
-		#redump {
-			position: absolute;
-			bottom: 20px;
-			left: 218px;
-		}
-
-		#no-intro {
-			position: absolute;
-			bottom: 20px;
-			left: 348px;
 		}
 
 		/* Tom-Select library */
@@ -550,13 +600,14 @@ body {
 			}
 
 			.ts-control {
-				padding: 6px 6px !important;
+				padding: 7.5px !important;
 
 				input {
 					color: $colorFont !important;
 				}
 
 				> .item {
+					max-width: 330px;
 					overflow: hidden;
 					text-wrap-mode: nowrap;
 					text-overflow: ellipsis;
@@ -594,79 +645,6 @@ body {
 		}
 	}
 
-	#help {
-		position: absolute;
-		top: 10px;
-		right: 10px;
-
-		color: $colorHelp;
-		font-weight: bolder;
-
-		border-radius: 50%;
-		border: 2px solid $colorHelp;
-
-		width: 23px;
-		height: 23px;
-
-		display: flex;
-		justify-content: center;
-		align-items: center;
-
-		cursor: help;
-	}
-
-	#api {
-		position: absolute;
-		top: 6px;
-		right: 90px;
-
-		width: 30px;
-		height: 30px;
-		font-size: 20px;
-
-		display: flex;
-		justify-content: center;
-		align-items: center;
-
-		background-image: url('../../img/api.svg');
-		background-size: contain;
-		background-repeat: no-repeat;
-
-		filter: grayscale(1);
-
-		cursor: pointer;
-
-		&.active {
-			filter: grayscale(0);
-		}
-	}
-
-	#credentials {
-		position: absolute;
-		top: 10px;
-		right: 50px;
-
-		width: 22px;
-		height: 22px;
-		font-size: 20px;
-
-		display: flex;
-		justify-content: center;
-		align-items: center;
-
-		background-image: url('../../img/key.svg');
-		background-size: contain;
-		background-repeat: no-repeat;
-
-		filter: grayscale(1);
-
-		cursor: pointer;
-
-		&.active {
-			filter: grayscale(0);
-		}
-	}
-
 	.tippy-box {
 		background: $colorButtonHover !important;
 		color: $colorFont !important;
@@ -683,5 +661,24 @@ body {
 
 	.tippy-arrow {
 		color: $colorButtonHover !important;
+	}
+
+	> [id^='tippy'] {
+		.tippy-content {
+			> div {
+				width: 100%;
+				height: 100%;
+				max-width: 330px;
+
+				overflow: hidden;
+				margin-top: 4px;
+
+				> img {
+					width: 100%;
+					height: 100%;
+					border-radius: 4px;
+				}
+			}
+		}
 	}
 }
