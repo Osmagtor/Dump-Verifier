@@ -99,6 +99,9 @@ export default class API {
 		this.storeCachePlatform();
 		this.storeCacheGame();
 		this.storeFailedCache();
+
+		this.logger.emptyLine();
+		this.logger.add('All caches cleared', 'success');
 	}
 
 	/**
@@ -257,17 +260,16 @@ export default class API {
 
 		// Generating list of names to try (with hyphen fallback)
 
-		const namesToTry: string[] = [formattedPlatform];
+		const namesToTry: string[] = [];
+
+		namesToTry.push(formattedPlatform);
 
 		if (formattedPlatform.includes('-')) {
 			const parts: string[] = formattedPlatform.split('-');
 
-			// After hyphen
-			namesToTry.push(parts[1].trim());
-
-			// Before hyphen
-
-			namesToTry.push(parts[0].trim());
+			parts.reverse().forEach((part: string): void => {
+				namesToTry.push(part.trim());
+			});
 		}
 
 		for (const nameToTry of namesToTry) {
@@ -281,6 +283,10 @@ export default class API {
 
 					const platforms: { name: string; id: number; alias: string }[] =
 						data.data.platforms;
+
+					if (!platforms.length) {
+						continue;
+					}
 
 					const platformNames: string[] = platforms.map(
 						(p: { name: string; id: number; alias: string }): string =>
@@ -478,17 +484,16 @@ export default class API {
 
 		// Generating list of names to try (with hyphen fallback)
 
-		const namesToTry: string[] = [formattedGameName];
+		const namesToTry: string[] = [];
+
+		namesToTry.push(formattedGameName);
 
 		if (formattedGameName.includes('-')) {
 			const parts: string[] = formattedGameName.split('-');
 
-			// After hyphen
-			namesToTry.push(parts[1].trim());
-
-			// Before hyphen
-
-			namesToTry.push(parts[0].trim());
+			parts.reverse().forEach((part: string): void => {
+				namesToTry.push(part.trim());
+			});
 		}
 
 		for (const nameToTry of namesToTry) {
