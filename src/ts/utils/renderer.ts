@@ -158,6 +158,7 @@ $(document).ready(async (): Promise<void> => {
 $('#api').on('click', async (ev: JQuery.Event): Promise<void> => {
 	ev.preventDefault();
 	const success: boolean = await api.getKey();
+	apiExists = await api.existsApiKey();
 	toggleArtwork(success, null, null, null);
 });
 
