@@ -143,8 +143,7 @@ body {
 			grid-template-columns: 1fr;
 
 			&:has(#artwork.visible),
-			&:has(#images.visible),
-			&:has(input[type='submit']) {
+			&:has(#images.visible) {
 				grid-template-columns: 5fr 1fr;
 				gap: 14px;
 			}
@@ -472,11 +471,6 @@ body {
 				}
 			}
 
-			> #buttons-container {
-				display: flex;
-				justify-content: space-between;
-			}
-
 			input[type='submit'] {
 				float: right;
 
@@ -506,7 +500,7 @@ body {
 			}
 		}
 
-		main {
+		> main {
 			height: 270px;
 			margin-top: 10px;
 
@@ -524,13 +518,12 @@ body {
 					outline: $outline;
 				}
 			}
+		}
 
-			&:has(input[type='text']) {
-				display: block;
-				width: 100%;
-				margin-top: 0px;
-				height: auto;
-			}
+		> footer {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
 		}
 
 		input[type='submit'],

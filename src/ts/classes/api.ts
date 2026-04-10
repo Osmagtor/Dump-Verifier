@@ -90,6 +90,18 @@ export default class API {
 	}
 
 	/**
+	 * Clears all caches
+	 */
+	public clearAllCache(): void {
+		this.platformIdCache = {};
+		this.gameIdCache = {};
+		this.failedCache = {};
+		this.storeCachePlatform();
+		this.storeCacheGame();
+		this.storeFailedCache();
+	}
+
+	/**
 	 * Opens a prompt to insert the API key and saves it for future use
 	 * @returns {boolean} `True` if the key was successfully inserted, `false` otherwise
 	 */
@@ -289,6 +301,8 @@ export default class API {
 							.filter((v): v is number => !!v)[0] ?? null;
 
 					if (found) {
+						this.platformIdCache[formattedPlatform] = found;
+						this.storeCachePlatform();
 						return found;
 					}
 				}
@@ -510,6 +524,8 @@ export default class API {
 							.filter((v): v is number => !!v)[0] ?? null;
 
 					if (found) {
+						this.gameIdCache[cacheKey] = found;
+						this.storeCacheGame();
 						return found;
 					}
 				}

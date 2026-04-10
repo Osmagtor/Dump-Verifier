@@ -198,6 +198,14 @@ $('#clear').on('click', (ev: JQuery.Event): void => {
 	clearVerifiedImages();
 });
 
+$('#cache').on('click', async (ev: JQuery.Event): Promise<void> => {
+	ev.preventDefault();
+
+	// Clearing the cache from the API class
+
+	api.clearAllCache();
+});
+
 $('#system').on('change', async (): Promise<void> => {
 	// Disabling the form while processing
 
