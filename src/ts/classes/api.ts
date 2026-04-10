@@ -1,6 +1,7 @@
-import { apiResponseGames, apiResponsePlatforms } from '../types.js';
+import { apiResponseGames, apiResponsePlatforms, dataGames } from '../types.js';
 import Logger from './logger.js';
 import { closest } from 'fastest-levenshtein';
+import { countries, ICountry } from 'countries-list';
 
 export default class API {
 	private static readonly service: string = 'GamesDBAPI';
@@ -242,45 +243,189 @@ export default class API {
 			return null;
 		}
 
-		try {
-			const res: Response = await fetch(
-				`${this.apiUrl}/Platforms/ByPlatformName?apikey=${key}&name=${encodeURIComponent(formattedPlatform)}`,
-			);
+		// Generating list of names to try (with hyphen fallback)
 
-			if (res.ok) {
-				const data: apiResponsePlatforms = await res.json();
+		const namesToTry: string[] = [formattedPlatform];
 
-				const platforms: { name: string; id: number; alias: string }[] =
-					data.data.platforms;
+		if (formattedPlatform.includes('-')) {
+			const parts: string[] = formattedPlatform.split('-');
 
-				const platformNames: string[] = platforms.map(
-					(p: { name: string; id: number; alias: string }): string => p.name,
+			// After hyphen
+			namesToTry.push(parts[1].trim());
+
+			// Before hyphen
+
+			namesToTry.push(parts[0].trim());
+		}
+
+		for (const nameToTry of namesToTry) {
+			try {
+				const res: Response = await fetch(
+					`${this.apiUrl}/Platforms/ByPlatformName?apikey=${key}&name=${encodeURIComponent(nameToTry)}`,
 				);
 
-				const match: string = closest(formattedPlatform, platformNames);
-				const found: number | null =
-					platforms.find(
-						(p: { name: string; id: number; alias: string }): boolean =>
-							p.name === match,
-					)?.id || null;
+				if (res.ok) {
+					const data: apiResponsePlatforms = await res.json();
 
-				if (found) {
-					this.platformIdCache[formattedPlatform] = found;
-					this.storeCachePlatform();
+					const platforms: { name: string; id: number; alias: string }[] =
+						data.data.platforms;
+
+					const platformNames: string[] = platforms.map(
+						(p: { name: string; id: number; alias: string }): string =>
+							p.name.toLowerCase().replace(/\s/g, ''),
+					);
+
+					const match: string = closest(formattedPlatform, platformNames)
+						.toLowerCase()
+						.replace(/\s/g, '');
+
+					const found: number | null =
+						platformNames
+							.map((p: string, i: number): number | undefined => {
+								if (p === match) {
+									return platforms[i].id;
+								}
+							})
+							.filter((v): v is number => !!v)[0] ?? null;
+
+					if (found) {
+						return found;
+					}
 				}
-
-				return found;
-			} else {
-				this.logger.add(`Error fetching platform: ${res.statusText}`, 'error');
-				this.failedCache[formattedPlatform] = true;
-				this.storeFailedCache();
-				return null;
+			} catch (err: any) {
+				this.logger.add('Error fetching platform', 'error');
+				console.error('Error fetching platform:', err);
 			}
-		} catch (err: any) {
-			this.logger.add('Error fetching platform', 'error');
-			console.error('Error fetching platform:', err);
-			return null;
 		}
+
+		this.failedCache[formattedPlatform] = true;
+		this.storeFailedCache();
+		return null;
+	}
+
+	/**
+	 * Gets the region of a game
+	 * @param {string} unformattedGameName The unformatted name of the game to get the region from
+	 * @returns {number[]} An array of region IDs corresponding to the regions the game belongs to, based on its name
+	 */
+	private getRegions(unformattedGameName: string): number[] {
+		const matchParentheses: RegExpMatchArray | null =
+			unformattedGameName.match(/\(([^)]+)\)/);
+		const matchBrackets: RegExpMatchArray | null =
+			unformattedGameName.match(/\[([^)]+)\]/);
+
+		let valueBrackets: string[] = [];
+		let valueParentheses: string[] = [];
+
+		let regions: number[] = [];
+
+		if (matchParentheses) {
+			valueParentheses = matchParentheses[1]
+				.split(',')
+				.map((v: string): string =>
+					v.trim() === 'USA'
+						? 'United States'
+						: v.trim() === 'UK'
+							? 'United Kingdom'
+							: v.trim() === 'Korea'
+								? 'South Korea'
+								: v.trim(),
+				)
+				.filter(
+					(v: string): boolean =>
+						v.length > 2 &&
+						!v.toLowerCase().includes('disc') &&
+						!v.toLowerCase().includes('track'),
+				);
+		} else if (matchBrackets) {
+			valueBrackets = matchBrackets[1]
+				.split(',')
+				.map((v: string): string =>
+					v.trim() === 'USA'
+						? 'United States'
+						: v.trim() === 'UK'
+							? 'United Kingdom'
+							: v.trim() === 'Korea'
+								? 'South Korea'
+								: v.trim(),
+				)
+				.filter(
+					(v: string): boolean =>
+						v.length > 2 &&
+						!v.toLowerCase().includes('disc') &&
+						!v.toLowerCase().includes('track'),
+				);
+		}
+
+		for (const v of [...valueBrackets, ...valueParentheses]) {
+			let continent: string = '';
+			let country: ICountry | undefined = Object.values(countries).find(
+				(c: ICountry): boolean =>
+					c.name.toLowerCase() === v.toLowerCase() ||
+					c.native.toLowerCase() === v.toLowerCase(),
+			);
+
+			// The name might not be that of a country's but a continent's
+
+			if (!country) {
+				if (v.toLowerCase().includes('europe')) {
+					continent = 'EU';
+				} else if (v.toLowerCase().includes('america')) {
+					continent = 'NA';
+				} else if (v.toLowerCase().includes('asia')) {
+					continent = 'AS';
+				} else if (v.toLowerCase().includes('africa')) {
+					continent = 'AF';
+				} else if (v.toLowerCase().includes('oceania')) {
+					continent = 'OC';
+				}
+			} else {
+				continent = country.continent;
+			}
+
+			if (continent) {
+				/**
+				 * Region mapping from: api.thegamesdb.net/v1/Regions
+				 * 1: NTSC
+				 * 2: NTSC-U
+				 * 3: NTSC-C
+				 * 4: NTSC-J
+				 * 5: NTSC-K
+				 * 6: PAL
+				 * 7: PAL-A
+				 * 8: PAL-B
+				 * 9: Other
+				 */
+
+				switch (continent) {
+					case 'EU':
+					case 'OC':
+					case 'AF':
+						regions = [...regions, 6, 7, 8];
+						break;
+					case 'NA':
+					case 'SA':
+						regions = [...regions, 1, 2];
+						break;
+					case 'AS':
+						if (country?.name.toLowerCase() === 'china') {
+							regions = [...regions, 3, 4];
+						} else if (country?.name.toLowerCase() === 'south korea') {
+							regions = [...regions, 5, 4];
+						} else {
+							regions = [...regions, 4];
+						}
+						break;
+					default:
+						regions = [...regions, 9, 0];
+						break;
+				}
+			}
+		}
+
+		// Removing duplicates
+
+		return Array.from(new Set(regions));
 	}
 
 	/**
@@ -299,13 +444,13 @@ export default class API {
 			return null;
 		}
 
-		// Formatting the game name to improve the chances of a successful match
+		// Getting the regions for the game
 
-		const formattedGameName: string = this.gameFormatter(gameName);
+		const regions: number[] = this.getRegions(gameName);
 
 		// Checking cache first
 
-		const cacheKey: string = `${platformId}-${formattedGameName}`;
+		const cacheKey: string = `${platformId}-${gameName}-${regions.join(',')}`;
 
 		if (this.gameIdCache[cacheKey]) {
 			return this.gameIdCache[cacheKey];
@@ -313,43 +458,71 @@ export default class API {
 			return null;
 		}
 
-		try {
-			const res: Response = await fetch(
-				`${this.apiUrl}/Games/ByGameName?apikey=${key}&filter[platform]=${platformId}&name=${encodeURIComponent(formattedGameName)}`,
-			);
+		// Formatting the game name to improve the chances of a successful match
 
-			if (res.ok) {
-				const data: apiResponseGames = await res.json();
-				const games: { game_title: string; id: number }[] = data.data.games;
+		const formattedGameName: string = this.gameFormatter(gameName);
 
-				const gameNames: string[] = games.map(
-					(g: { game_title: string; id: number }): string => g.game_title,
+		// Generating list of names to try (with hyphen fallback)
+
+		const namesToTry: string[] = [formattedGameName];
+
+		if (formattedGameName.includes('-')) {
+			const parts: string[] = formattedGameName.split('-');
+
+			// After hyphen
+			namesToTry.push(parts[1].trim());
+
+			// Before hyphen
+
+			namesToTry.push(parts[0].trim());
+		}
+
+		for (const nameToTry of namesToTry) {
+			try {
+				const res: Response = await fetch(
+					`${this.apiUrl}/Games/ByGameName?apikey=${key}&filter[platform]=${platformId}&name=${encodeURIComponent(nameToTry)}`,
 				);
 
-				const match: string = closest(formattedGameName, gameNames);
-				const found: number | null =
-					games.find(
-						(g: { game_title: string; id: number }): boolean =>
-							g.game_title === match,
-					)?.id || null;
+				if (res.ok) {
+					const data: apiResponseGames = await res.json();
+					const games: dataGames[] = data.data.games;
 
-				if (found) {
-					this.gameIdCache[cacheKey] = found;
-					this.storeCacheGame();
+					const gameNames: string[] = games.map((g: dataGames): string =>
+						g.game_title.toLowerCase().replace(/\s/g, ''),
+					);
+
+					const match: string = closest(formattedGameName, gameNames)
+						.toLowerCase()
+						.replace(/\s/g, '');
+
+					const found: number =
+						gameNames
+							.map((g: string, i: number): number | undefined => {
+								if (g === match) {
+									if (
+										regions.length === 0 ||
+										regions.includes(games[i].region_id)
+									) {
+										return games[i].id;
+									}
+								}
+							})
+							.filter((v): v is number => !!v)[0] ?? null;
+
+					if (found) {
+						return found;
+					}
 				}
-
-				return found;
-			} else {
-				this.logger.add(`Error fetching game: ${res.statusText}`, 'error');
-				this.failedCache[cacheKey] = true;
-				this.storeFailedCache();
+			} catch (err: any) {
+				this.logger.add('Error fetching game', 'error');
+				console.error('Error fetching game:', err);
 				return null;
 			}
-		} catch (err: any) {
-			this.logger.add('Error fetching game', 'error');
-			console.error('Error fetching game:', err);
-			return null;
 		}
+
+		this.failedCache[cacheKey] = true;
+		this.storeFailedCache();
+		return null;
 	}
 
 	/**
@@ -407,10 +580,7 @@ export default class API {
 		const platformId: number | null = await this.getPlatformId(platform);
 
 		if (platformId === null) {
-			this.logger.add(
-				`Cannot fetch game image: platform "${platform}" not found`,
-				'error',
-			);
+			this.logger.add(`Not found: platform "${platform}"`, 'error');
 			return null;
 		}
 
@@ -419,10 +589,7 @@ export default class API {
 		const gameId: number | null = await this.getGameByName(platformId, game);
 
 		if (gameId === null) {
-			this.logger.add(
-				`Cannot fetch game image: game "${game}" not found`,
-				'error',
-			);
+			this.logger.add(`Not found: game "${game}"`, 'error');
 			return null;
 		}
 
@@ -464,20 +631,15 @@ export default class API {
 	 * @returns {string} The formatted platform string
 	 */
 	private platformFormatter(platform: string): string {
-		const platformTemp: string =
+		return (
 			platform
 				.split('/')?.[1]
 				?.trim()
 				?.replace(/: /g, '')
 				?.replace(/\([\w+\s-,]+\)/g, '')
 				?.replace(/\[\w+\]/g, '')
-				?.toLowerCase() ?? '';
-
-		const platformTemp2: string = platformTemp.includes('-')
-			? platformTemp.split('-')?.[1]?.trim()
-			: platformTemp;
-
-		return platformTemp2;
+				?.toLowerCase() ?? ''
+		);
 	}
 
 	/**
@@ -486,18 +648,12 @@ export default class API {
 	 * @returns {string} The formatted game string
 	 */
 	private gameFormatter(game: string): string {
-		const gameNameTemp: string = game
+		return game
 			.replace(/\([\w+\s-,]+\)/g, '')
 			.replace(/\[\w+\]/g, '')
 			.replace(/\.[a-zA-Z0-9]+$/, '')
 			.replace(/[^a-zA-Z0-9-&'\s]/g, '')
 			.trim()
 			.toLowerCase();
-
-		const gameNameTemp2: string = gameNameTemp.includes('-')
-			? gameNameTemp.split('-')?.[1]?.trim()
-			: gameNameTemp;
-
-		return gameNameTemp2;
 	}
 }
