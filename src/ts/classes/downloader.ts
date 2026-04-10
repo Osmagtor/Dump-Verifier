@@ -3,14 +3,14 @@ import JSZip from 'jszip';
 import type { data, systemData } from '../types.js';
 
 class Downloader {
-	private static redumpURL: string =
+	private static readonly redumpURL: string =
 		'http://wiki.redump.org/index.php?title=List_of_DB_Download_Links';
 
 	private readonly systems: systemData[] = [];
 	private loaded: number = 0;
 	private total: number = 0;
 
-	private logger: Logger;
+	private readonly logger: Logger;
 	private cookies: string = '';
 	private requireAuthentication!: Record<string, boolean>;
 

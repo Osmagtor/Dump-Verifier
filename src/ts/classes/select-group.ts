@@ -3,8 +3,8 @@ import type { data, systemData } from '../types.js';
 import { TomOption } from 'tom-select/src/types/core.js';
 
 export default class SelectGroup {
-	private selectorSystems: string = '';
-	private selectorGames: string = '';
+	private readonly selectorSystems: string = '';
+	private readonly selectorGames: string = '';
 	private selectSystems!: TomSelect;
 	private selectGames!: TomSelect;
 

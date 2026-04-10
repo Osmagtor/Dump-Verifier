@@ -31,8 +31,8 @@ export default class Verifier {
 	private total: number = 0;
 	private successful: number = 0;
 
-	private logger!: Logger;
-	private api!: API;
+	private readonly logger!: Logger;
+	private readonly api!: API;
 
 	/**
 	 * Class constructor
