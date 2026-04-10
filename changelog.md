@@ -1,3 +1,8 @@
+# v2.0.3
+
+- A log entry is now added when the "clear cache" button is pressed.
+- Hotfix for Sega Genesis/MegaDrive cover art not working at all.
+
 # v2.0.2
 
 - Proper responsive UI. The UI should now be identical across platforms.
