@@ -261,7 +261,7 @@ jobs:
       - name: Extract changelog for release
         id: extract_changelog
         run: |
-          changelog=$(awk '/# v${{ needs.set-version.outputs.version }}/{flag=1; next} /^#/{flag=0} flag' changelog.md | xargs)
+          changelog=$(awk '/# v2.0.2/{flag=1; next} /^#/{flag=0} flag' changelog.md)
           echo "$changelog"
           echo "changelog<<EOF" >> $GITHUB_ENV
           echo "$changelog" >> $GITHUB_ENV
