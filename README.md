@@ -1,5 +1,7 @@
 # Dump Verifier
 
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/P5P71I1ITU)
+
 An Electron app to verify game dumps using the `redump.org` and `no-intro.org` databases.
 
 ![Screenshot](img/screenshot.png)
