@@ -29,8 +29,7 @@ jobs:
         id: get_version
         run: |
           version=$(node -p "require('./package.json').version")
-          echo "version=$version" >> $GITHUB_ENV
-          echo "::set-output name=version::$version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
 
   build-linux:
     name: Compile and Package (Linux)
@@ -83,13 +82,19 @@ jobs:
       - name: Build packages
         run: npm run release -- --arch=${{ matrix.architecture }}
 
+      - name: List generated artifacts
+        run: |
+          echo "Files under out/make:"
+          find out/make -type f | sort || true
+
       - name: Upload artifacts
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v8
         with:
           name: dump-verifier-linux-${{ needs.set-version.outputs.version }}-${{ matrix.architecture }}
           path: |
             out/make/**/*.deb
             out/make/**/*.rpm
+          if-no-files-found: error
           retention-days: 1
           overwrite: true
 
@@ -139,11 +144,17 @@ jobs:
       - name: Build packages
         run: npm run release -- --arch=${{ matrix.architecture }}
 
+      - name: List generated artifacts
+        run: |
+          echo "Files under out/make:"
+          find out/make -type f | sort || true
+
       - name: Upload artifacts
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v8
         with:
           name: dump-verifier-macos-${{ needs.set-version.outputs.version }}-${{ matrix.architecture }}
           path: out/make/**/*.zip
+          if-no-files-found: error
           retention-days: 1
           overwrite: true
 
@@ -193,11 +204,20 @@ jobs:
       - name: Build packages
         run: npm run release -- --arch=${{ matrix.architecture }}
 
+      - name: List generated artifacts
+        shell: pwsh
+        run: |
+          Write-Host "Files under out/make:"
+          if (Test-Path out/make) {
+            Get-ChildItem -Path out/make -Recurse -File | Select-Object -ExpandProperty FullName
+          }
+
       - name: Upload artifacts
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v8
         with:
           name: dump-verifier-windows-${{ needs.set-version.outputs.version }}-${{ matrix.architecture }}
           path: out/make/**/*.exe
+          if-no-files-found: error
           retention-days: 1
           overwrite: true
 
@@ -261,7 +281,18 @@ jobs:
       - name: Extract changelog for release
         id: extract_changelog
         run: |
-          changelog=$(awk '/# v2.0.2/{flag=1; next} /^#/{flag=0} flag' changelog.md)
+          version="${{ needs.set-version.outputs.version }}"
+          changelog=$(awk -v v="$version" '
+            $0 ~ "^# v" v "$" {flag=1; next}
+            /^#/ && flag {exit}
+            flag {print}
+          ' changelog.md)
+
+          if [ -z "$changelog" ]; then
+            echo "No changelog entry found for v$version" >&2
+            exit 1
+          fi
+
           echo "$changelog"
           echo "changelog<<EOF" >> $GITHUB_ENV
           echo "$changelog" >> $GITHUB_ENV
