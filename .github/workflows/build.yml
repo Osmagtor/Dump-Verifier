@@ -86,9 +86,9 @@ jobs:
 
       - name: List generated artifacts
         run: |
-          echo "Files under out/make:"
+          echo "Files under out/:"
           ls -al .
-          find out/make -type f | sort || true
+          find out -type f | sort || true
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v7
@@ -151,9 +151,9 @@ jobs:
 
       - name: List generated artifacts
         run: |
-          echo "Files under out/make:"
+          echo "Files under out/:"
           ls -al .
-          find out/make -type f | sort || true
+          find out -type f | sort || true
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v7
@@ -215,10 +215,10 @@ jobs:
       - name: List generated artifacts
         shell: pwsh
         run: |
-          Write-Host "Files under out/make:"
+          Write-Host "Files under out/:"
           Get-ChildItem -Force
-          if (Test-Path out/make) {
-            Get-ChildItem -Path out/make -Recurse -File | Select-Object -ExpandProperty FullName
+          if (Test-Path out) {
+            Get-ChildItem -Path out -Recurse -File | Select-Object -ExpandProperty FullName
           }
 
       - name: Upload artifacts
