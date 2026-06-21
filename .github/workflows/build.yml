@@ -52,7 +52,7 @@ jobs:
       - name: Cache Node.js dependencies
         uses: actions/cache@v3
         with:
-          path: /node_modules
+          path: node_modules
           key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-node-
@@ -80,18 +80,16 @@ jobs:
         run: npm run build
 
       - name: Build packages
-        run: |
-          npm run release -- --arch=${{ matrix.architecture }}
-          echo "Printing exit code of the last command: $?"
+        run: npm run release -- --arch=${{ matrix.architecture }}
 
       - name: List generated artifacts
         run: |
-          echo "Files under out/:"
-          ls -al .
-          find out -type f | sort || true
+          echo "Files under out/make:"
+          find . -type d -name out
+          find out/make -type f | sort || true
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v8
         with:
           name: dump-verifier-linux-${{ needs.set-version.outputs.version }}-${{ matrix.architecture }}
           path: |
@@ -122,7 +120,7 @@ jobs:
       - name: Cache Node.js dependencies
         uses: actions/cache@v3
         with:
-          path: /node_modules
+          path: node_modules
           key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-node-
@@ -145,18 +143,16 @@ jobs:
         run: npm run build
 
       - name: Build packages
-        run: |
-          npm run release -- --arch=${{ matrix.architecture }}
-          echo "Printing exit code of the last command: $?"
+        run: npm run release -- --arch=${{ matrix.architecture }}
 
       - name: List generated artifacts
         run: |
-          echo "Files under out/:"
-          ls -al .
-          find out -type f | sort || true
+          echo "Files under out/make:"
+          find . -type d -name out
+          find out/make -type f | sort || true
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v8
         with:
           name: dump-verifier-macos-${{ needs.set-version.outputs.version }}-${{ matrix.architecture }}
           path: out/make/**/*.zip
@@ -185,7 +181,7 @@ jobs:
       - name: Cache Node.js dependencies
         uses: actions/cache@v3
         with:
-          path: /node_modules
+          path: node_modules
           key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-node-
@@ -208,21 +204,19 @@ jobs:
         run: npm run build
 
       - name: Build packages
-        run: |
-          npm run release -- --arch=${{ matrix.architecture }}
-          echo "Printing exit code of the last command: $?"
+        run: npm run release -- --arch=${{ matrix.architecture }}
 
       - name: List generated artifacts
         shell: pwsh
         run: |
-          Write-Host "Files under out/:"
-          Get-ChildItem -Force
-          if (Test-Path out) {
-            Get-ChildItem -Path out -Recurse -File | Select-Object -ExpandProperty FullName
+          Write-Host "Files under out/make:"
+          Get-ChildItem -Path . -Directory -Recurse -Force -ErrorAction SilentlyContinue | Where-Object { $_.Name -eq 'out' } | ForEach-Object { Write-Host $_.FullName }
+          if (Test-Path 'out/make') {
+            Get-ChildItem -Path 'out/make' -Recurse -File | Select-Object -ExpandProperty FullName
           }
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v8
         with:
           name: dump-verifier-windows-${{ needs.set-version.outputs.version }}-${{ matrix.architecture }}
           path: out/make/**/*.exe

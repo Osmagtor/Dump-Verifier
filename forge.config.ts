@@ -5,7 +5,6 @@ import MakerDeb from '@electron-forge/maker-deb';
 import MakerRpm from '@electron-forge/maker-rpm';
 
 const config: ForgeConfig = {
-	outDir: 'out',
 	packagerConfig: {
 		ignore: ['dat($|/)'],
 		name: 'Dump Verifier',
