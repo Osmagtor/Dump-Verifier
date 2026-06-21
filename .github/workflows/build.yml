@@ -88,7 +88,6 @@ jobs:
         run: |
           echo "Files under out/make:"
           ls -al .
-          find . -type f \( -name "*.deb" -o -name "*.rpm" \) | sort || true
           find out/make -type f | sort || true
 
       - name: Upload artifacts
@@ -154,7 +153,6 @@ jobs:
         run: |
           echo "Files under out/make:"
           ls -al .
-          find . -type f \( -name "*.zip" \) | sort || true
           find out/make -type f | sort || true
 
       - name: Upload artifacts
@@ -219,7 +217,6 @@ jobs:
         run: |
           Write-Host "Files under out/make:"
           Get-ChildItem -Force
-          Get-ChildItem -Recurse -File -Filter '*.exe' | Sort-Object FullName || true
           if (Test-Path out/make) {
             Get-ChildItem -Path out/make -Recurse -File | Select-Object -ExpandProperty FullName
           }
