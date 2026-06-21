@@ -60,7 +60,7 @@ jobs:
       - name: Install dependencies
         run: |
           npm pkg delete scripts.prepare
-          npm install
+          npm ci
         continue-on-error: true
 
       - name: Clear npm cache (if install fails)
@@ -69,7 +69,7 @@ jobs:
 
       - name: Retry Install dependencies
         if: failure()
-        run: npm install
+        run: npm ci
 
       - name: Install required packages for deb and rpm
         run: |
@@ -128,7 +128,7 @@ jobs:
       - name: Install dependencies
         run: |
           npm pkg delete scripts.prepare
-          npm install
+          npm ci
         continue-on-error: true
 
       - name: Clear npm cache (if install fails)
@@ -137,7 +137,7 @@ jobs:
 
       - name: Retry Install dependencies
         if: failure()
-        run: npm install
+        run: npm ci
 
       - name: Compile SCSS and TypeScript
         run: npm run build
@@ -189,7 +189,7 @@ jobs:
       - name: Install dependencies
         run: |
           npm pkg delete scripts.prepare
-          npm install
+          npm ci
         continue-on-error: true
 
       - name: Clear npm cache (if install fails)
@@ -198,7 +198,7 @@ jobs:
 
       - name: Retry Install dependencies
         if: failure()
-        run: npm install
+        run: npm ci
 
       - name: Compile SCSS and TypeScript
         run: npm run build
