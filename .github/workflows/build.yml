@@ -84,16 +84,18 @@ jobs:
 
       - name: List generated artifacts
         run: |
-          echo "Files under ./out/make:"
-          find ./out/make -type f | sort || true
+          echo "Files under out/make:"
+          ls -al .
+          find . -type f \( -name "*.deb" -o -name "*.rpm" \) | sort || true
+          find out/make -type f | sort || true
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v7
         with:
           name: dump-verifier-linux-${{ needs.set-version.outputs.version }}-${{ matrix.architecture }}
           path: |
-            ./out/make/**/*.deb
-            ./out/make/**/*.rpm
+            out/make/**/*.deb
+            out/make/**/*.rpm
           if-no-files-found: error
           retention-days: 1
           overwrite: true
@@ -146,14 +148,16 @@ jobs:
 
       - name: List generated artifacts
         run: |
-          echo "Files under ./out/make:"
-          find ./out/make -type f | sort || true
+          echo "Files under out/make:"
+          ls -al .
+          find . -type f \( -name "*.zip" \) | sort || true
+          find out/make -type f | sort || true
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v7
         with:
           name: dump-verifier-macos-${{ needs.set-version.outputs.version }}-${{ matrix.architecture }}
-          path: ./out/make/**/*.zip
+          path: out/make/**/*.zip
           if-no-files-found: error
           retention-days: 1
           overwrite: true
@@ -207,16 +211,18 @@ jobs:
       - name: List generated artifacts
         shell: pwsh
         run: |
-          Write-Host "Files under ./out/make:"
-          if (Test-Path ./out/make) {
-            Get-ChildItem -Path ./out/make -Recurse -File | Select-Object -ExpandProperty FullName
+          Write-Host "Files under out/make:"
+          Get-ChildItem -Force
+          Get-ChildItem -Recurse -File -Filter '*.exe' | Sort-Object FullName || true
+          if (Test-Path out/make) {
+            Get-ChildItem -Path out/make -Recurse -File | Select-Object -ExpandProperty FullName
           }
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v7
         with:
           name: dump-verifier-windows-${{ needs.set-version.outputs.version }}-${{ matrix.architecture }}
-          path: ./out/make/**/*.exe
+          path: out/make/**/*.exe
           if-no-files-found: error
           retention-days: 1
           overwrite: true
