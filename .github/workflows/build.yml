@@ -23,7 +23,7 @@ jobs:
       version: ${{ steps.get_version.outputs.version }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Get version from package.json
         id: get_version
@@ -43,20 +43,12 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: 24
-
-      - name: Cache Node.js dependencies
-        uses: actions/cache@v3
-        with:
-          path: /node_modules
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
+          node-version: 22
 
       - name: Install dependencies
         run: |
@@ -64,13 +56,13 @@ jobs:
           npm install
         continue-on-error: true
 
-      - name: Clear npm cache (if install fails)
-        if: failure()
-        run: npm cache clean --force
-
-      - name: Retry Install dependencies
-        if: failure()
-        run: npm install
+      - name: Dump versions
+        run: |
+          node -v
+          npm -v
+          npm ls @electron-forge/cli
+          npm ls @electron-forge/maker-zip
+          npm ls electron
 
       - name: Install required packages for deb and rpm
         run: |
@@ -81,7 +73,9 @@ jobs:
         run: npm run build
 
       - name: Build packages
-        run: npm run release -- --arch=${{ matrix.architecture }}
+        run: |
+          DEBUG=electron-forge:*,electron-packager* npm run release -- --arch=${{ matrix.architecture }}
+          echo "$?"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v6
@@ -104,20 +98,12 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: 24
-
-      - name: Cache Node.js dependencies
-        uses: actions/cache@v3
-        with:
-          path: /node_modules
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
+          node-version: 22
 
       - name: Install dependencies
         run: |
@@ -125,19 +111,21 @@ jobs:
           npm install
         continue-on-error: true
 
-      - name: Clear npm cache (if install fails)
-        if: failure()
-        run: npm cache clean --force
-
-      - name: Retry Install dependencies
-        if: failure()
-        run: npm install
+      - name: Dump versions
+        run: |
+          node -v
+          npm -v
+          npm ls @electron-forge/cli
+          npm ls @electron-forge/maker-zip
+          npm ls electron
 
       - name: Compile SCSS and TypeScript
         run: npm run build
 
       - name: Build packages
-        run: npm run release -- --arch=${{ matrix.architecture }}
+        run: |
+          DEBUG=electron-forge:*,electron-packager* npm run release -- --arch=${{ matrix.architecture }}
+          echo "$?"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v6
@@ -158,20 +146,12 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: 24
-
-      - name: Cache Node.js dependencies
-        uses: actions/cache@v3
-        with:
-          path: /node_modules
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
+          node-version: 22
 
       - name: Install dependencies
         run: |
@@ -179,19 +159,22 @@ jobs:
           npm install
         continue-on-error: true
 
-      - name: Clear npm cache (if install fails)
-        if: failure()
-        run: npm cache clean --force
-
-      - name: Retry Install dependencies
-        if: failure()
-        run: npm install
+      - name: Dump versions
+        run: |
+          node -v
+          npm -v
+          npm ls @electron-forge/cli
+          npm ls @electron-forge/maker-zip
+          npm ls electron
 
       - name: Compile SCSS and TypeScript
         run: npm run build
 
       - name: Build packages
-        run: npm run release -- --arch=${{ matrix.architecture }}
+        run: |
+          $env:DEBUG="electron-forge:*,electron-packager*"
+          npm run release -- --arch=${{ matrix.architecture }}
+          echo "$?"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v6
@@ -208,7 +191,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Download Linux x64 artifacts
         uses: actions/download-artifact@v8

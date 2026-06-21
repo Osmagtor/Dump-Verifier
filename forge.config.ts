@@ -12,51 +12,42 @@ const config: ForgeConfig = {
 		icon: 'img/icon',
 	},
 	makers: [
-		new MakerSquirrel(
-			{
-				authors: 'Óscar Maganto Torres',
-				setupIcon: 'img/icon.ico',
-			},
-			['win32'],
-		),
+		new MakerSquirrel({
+			authors: 'Óscar Maganto Torres',
+			setupIcon: 'img/icon.ico',
+		}),
 		new MakerZIP({}, ['darwin']),
-		new MakerDeb(
-			{
-				options: {
-					name: 'dump-verifier',
-					productName: 'Dump Verifier',
-					genericName: 'Hash Verifier for Game Dumps',
-					description:
-						'A tool to verify game dumps using the redump.org and no-intro.org databases.',
-					productDescription:
-						'A tool to verify game dumps using the redump.org and no-intro.org databases.',
-					version: '1.2.1',
-					icon: 'img/icon.ico',
-					categories: ['Utility'],
-					homepage: 'https://github.com/Osmagtor/Dump-Verifier',
-				},
+		new MakerDeb({
+			options: {
+				name: 'dump-verifier',
+				productName: 'Dump Verifier',
+				genericName: 'Hash Verifier for Game Dumps',
+				description:
+					'A tool to verify game dumps using the redump.org and no-intro.org databases.',
+				productDescription:
+					'A tool to verify game dumps using the redump.org and no-intro.org databases.',
+				version: '1.2.1',
+				icon: 'img/icon.ico',
+				categories: ['Utility'],
+				homepage: 'https://github.com/Osmagtor/Dump-Verifier',
 			},
-			['linux'],
-		),
-		new MakerRpm(
-			{
-				options: {
-					name: 'dump-verifier',
-					productName: 'Dump Verifier',
-					genericName: 'Hash Verifier for Game Dumps',
-					description:
-						'A tool to verify game dumps using the redump.org and no-intro.org databases.',
-					productDescription:
-						'A tool to verify game dumps using the redump.org and no-intro.org databases.',
-					version: '1.2.1',
-					license: 'Apache-2.0',
-					icon: 'img/icon.ico',
-					categories: ['Utility'],
-					homepage: 'https://github.com/Osmagtor/Dump-Verifier',
-				},
+		}),
+		new MakerRpm({
+			options: {
+				name: 'dump-verifier',
+				productName: 'Dump Verifier',
+				genericName: 'Hash Verifier for Game Dumps',
+				description:
+					'A tool to verify game dumps using the redump.org and no-intro.org databases.',
+				productDescription:
+					'A tool to verify game dumps using the redump.org and no-intro.org databases.',
+				version: '1.2.1',
+				license: 'Apache-2.0',
+				icon: 'img/icon.ico',
+				categories: ['Utility'],
+				homepage: 'https://github.com/Osmagtor/Dump-Verifier',
 			},
-			['linux'],
-		),
+		}),
 	],
 };
 
