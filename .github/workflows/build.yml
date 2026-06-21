@@ -88,7 +88,7 @@ jobs:
           find out/make -type f | sort || true
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v8
+        uses: actions/upload-artifact@v7
         with:
           name: dump-verifier-linux-${{ needs.set-version.outputs.version }}-${{ matrix.architecture }}
           path: |
@@ -150,7 +150,7 @@ jobs:
           find out/make -type f | sort || true
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v8
+        uses: actions/upload-artifact@v7
         with:
           name: dump-verifier-macos-${{ needs.set-version.outputs.version }}-${{ matrix.architecture }}
           path: out/make/**/*.zip
@@ -213,7 +213,7 @@ jobs:
           }
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v8
+        uses: actions/upload-artifact@v7
         with:
           name: dump-verifier-windows-${{ needs.set-version.outputs.version }}-${{ matrix.architecture }}
           path: out/make/**/*.exe
