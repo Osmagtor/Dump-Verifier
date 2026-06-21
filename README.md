@@ -41,12 +41,7 @@ As of the time of updating these instructions (6th of April of 2026), `.flatpak`
 
 Shortly after opening up, the app downloads the list of available systems on `redump.org` and dynamically fetches the `.dat` files for each of the URLs therein. Then, it parses them as `.json` files and stores them locally. If these files already exist locally, they are simply skipped.
 
-Some of the systems on this list may only be accessible to users with an account with "dumper" status on `redump.org`. If you already have such an account, you can download these `.dat` files too. To do so:
-
-1. Click on the gray key icon in the top right corner. You will be taken to `forum.redump.org` to log in. If you successfully log in, the key icon will turn yellow.
-2. Click on the `Update Redump` button to download all `.dat` files again. This time your session token from `Redump.org` will be used to download the remaining `.dat` files.
-
-Note: Since `.dat` files do not need to be fetched every time (only the first time you open up the app or if new games have been added to `Redump.org` and you manually fetch them again by pressing the "Update Redump" button), your session token will not be stored locally for future use. Every time you want to download `.dat` files that require "dumper" status, you will need to log back in. This may be slightly inconvinient, but it is more secure.
+Note: Since `.dat` files do not need to be fetched every time (only the first time you open up the app or if new games have been added to `Redump.org` and you manually fetch them again by pressing the "Update Redump" button).
 
 ### No-intro
 
@@ -96,7 +91,7 @@ As already noted, the API key will be used to get the cover art of:
 
 Your API key is stored locally for convenience as it is something that may be used very often, unlike the `Redump.org` session token. On a different note, caching is used to reduce the number of API calls where possible.
 
-Note: Some game names may not be processed correctly and their cover art may consequently fail to be retrieved correctly or at all. In such cases, first make sure that [The Games DB](https://thegamesdb.net/) contains an entry for the game in question and for its region. If it already does, please open up an issue in this repository to look into it and make the app as watertight as possible. 
+Note: Some game names may not be processed correctly and their cover art may consequently fail to be retrieved correctly or at all. In such cases, first make sure that [The Games DB](https://thegamesdb.net/) contains an entry for the game in question and for its region. If it already does, please open up an issue in this repository to look into it and make the app as watertight as possible.
 
 ### Updates
 

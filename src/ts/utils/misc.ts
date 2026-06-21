@@ -91,8 +91,6 @@ export function toggleForm(enabled: boolean, selectorGroup: SelectGroup): void {
 		.find('form>div>input, button, input[type="submit"]')
 		.prop('disabled', !enabled);
 
-	$('#credentials').css('pointer-events', enabled ? 'auto' : 'none');
-
 	$('#api').css('pointer-events', enabled ? 'auto' : 'none');
 
 	if (enabled) {

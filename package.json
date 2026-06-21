@@ -1,6 +1,6 @@
 {
 	"name": "dump-verifier",
-	"version": "2.0.3",
+	"version": "2.0.4",
 	"description": "A tool to verify game dumps using the redump.org and no-intro.org databases.",
 	"license": "Apache-2.0",
 	"author": "Óscar Maganto Torres",
@@ -46,6 +46,7 @@
 		"@electron/fuses": "^1.8.0",
 		"@types/jquery": "^3.5.32",
 		"@types/tippy.js": "^6.3.0",
+		"depcheck": "^1.4.7",
 		"electron": "^41.1.1",
 		"esbuild": "^0.27.2"
 	}

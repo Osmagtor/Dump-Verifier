@@ -1,3 +1,8 @@
+# v2.0.4
+
+- Updated the `Redump` URL after the `Redump` team migrated to [`Redump.info`](https://redump.info/).
+- Since the new domain does not appear to have reserved any `.dat` files to authenticated users with dumper status, the button to log into the [`Redump` forum](https://forum.redump.info/) has been removed.
+
 # v2.0.3
 
 - A log entry is now added when the "clear cache" button is pressed.

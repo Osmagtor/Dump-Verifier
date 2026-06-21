@@ -4,7 +4,7 @@ import * as path from 'path';
 export default class Window {
 	private window!: BrowserWindow | null;
 	private readonly app!: Electron.App;
-	private readonly type!: 'main' | 'api' | 'login';
+	private readonly type!: 'main' | 'api';
 
 	/**
 	 * Getter for the BrowserWindow instance
@@ -15,10 +15,10 @@ export default class Window {
 
 	/**
 	 * Class constructor
-	 * @param {'main'|'api'|'login'} type The type of window to create, which determines its dimensions and behavior. Can be 'main', 'api', or 'login'
+	 * @param {'main'|'api'} type The type of window to create, which determines its dimensions and behavior. Can be 'main' or 'api'
 	 * @param {Electron.App} app The Electron app instance, used to get paths for resources and set the application icon
 	 */
-	constructor(type: 'main' | 'api' | 'login', app: Electron.App) {
+	constructor(type: 'main' | 'api', app: Electron.App) {
 		this.type = type;
 		this.app = app;
 	}
@@ -58,10 +58,6 @@ export default class Window {
 	 * @returns {string} The path to the application icon
 	 */
 	private getIcon(): string {
-		if (this.type === 'login') {
-			return '';
-		}
-
 		return path.join(this.app.getAppPath(), 'img/icon.ico');
 	}
 
@@ -70,10 +66,6 @@ export default class Window {
 	 * @returns {string} The path to the preload script
 	 */
 	private getPreload(): string {
-		if (this.type === 'login') {
-			return '';
-		}
-
 		return path.join(
 			this.app.getAppPath(),
 			this.type === 'main' ? 'dist/js/preload.cjs' : 'dist/js/preloadModal.cjs',
@@ -85,10 +77,6 @@ export default class Window {
 	 * @returns {string} The path to the HTML file to load
 	 */
 	private getHTML(): string {
-		if (this.type === 'login') {
-			return 'http://forum.redump.org/login/';
-		}
-
 		return path.join(
 			this.app.getAppPath(),
 			this.type === 'main' ? 'dist/html/index.html' : 'dist/html/api.html',
@@ -120,7 +108,7 @@ export default class Window {
 		this.window = new BrowserWindow({
 			width: width,
 			height: height,
-			resizable: this.type === 'login',
+			resizable: false,
 			icon: this.getIcon(),
 			modal: this.type !== 'main',
 			webPreferences: {
@@ -132,21 +120,17 @@ export default class Window {
 
 		this.window.setMenuBarVisibility(false);
 
-		if (this.type !== 'login') {
-			void this.window.loadFile(this.getHTML());
+		void this.window.loadFile(this.getHTML());
 
-			// Send accent color to renderer
+		// Send accent color to renderer
 
-			this.window.webContents.on('did-finish-load', (): void => {
-				if (this.window) {
-					nativeTheme.on('updated', this.callbackTheme);
-				}
+		this.window.webContents.on('did-finish-load', (): void => {
+			if (this.window) {
+				nativeTheme.on('updated', this.callbackTheme);
+			}
 
-				this.callbackTheme();
-			});
-		} else {
-			void this.window.loadURL(this.getHTML());
-		}
+			this.callbackTheme();
+		});
 
 		this.window.on('closed', (): void => {
 			this.window = null;
