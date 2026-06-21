@@ -80,12 +80,13 @@ jobs:
         run: npm run build
 
       - name: Build packages
-        run: npm run release -- --arch=${{ matrix.architecture }}
+        run: |
+          npm run release -- --arch=${{ matrix.architecture }}
+          echo "Printing exit code of the last command: $?"
 
       - name: List generated artifacts
         run: |
           echo "Files under out/make:"
-          mkdir -p out
           ls -al .
           find . -type f \( -name "*.deb" -o -name "*.rpm" \) | sort || true
           find out/make -type f | sort || true
@@ -145,12 +146,13 @@ jobs:
         run: npm run build
 
       - name: Build packages
-        run: npm run release -- --arch=${{ matrix.architecture }}
+        run: |
+          npm run release -- --arch=${{ matrix.architecture }}
+          echo "Printing exit code of the last command: $?"
 
       - name: List generated artifacts
         run: |
           echo "Files under out/make:"
-          mkdir -p out
           ls -al .
           find . -type f \( -name "*.zip" \) | sort || true
           find out/make -type f | sort || true
@@ -208,13 +210,14 @@ jobs:
         run: npm run build
 
       - name: Build packages
-        run: npm run release -- --arch=${{ matrix.architecture }}
+        run: |
+          npm run release -- --arch=${{ matrix.architecture }}
+          echo "Printing exit code of the last command: $?"
 
       - name: List generated artifacts
         shell: pwsh
         run: |
           Write-Host "Files under out/make:"
-          New-Item -ItemType Directory -Path out/make -Force | Out-Null
           Get-ChildItem -Force
           Get-ChildItem -Recurse -File -Filter '*.exe' | Sort-Object FullName || true
           if (Test-Path out/make) {
