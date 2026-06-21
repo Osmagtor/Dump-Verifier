@@ -1,13 +1,8 @@
-import type {
-	ForgeConfig,
-	ForgeConfigMaker,
-} from '@electron-forge/shared-types';
+import type { ForgeConfig } from '@electron-forge/shared-types';
 import { MakerSquirrel } from '@electron-forge/maker-squirrel';
 import MakerZIP from '@electron-forge/maker-zip';
 import MakerDeb from '@electron-forge/maker-deb';
 import MakerRpm from '@electron-forge/maker-rpm';
-
-console.log('FORGE CONFIG LOADED');
 
 const config: ForgeConfig = {
 	packagerConfig: {
@@ -55,7 +50,5 @@ const config: ForgeConfig = {
 		}),
 	],
 };
-
-console.dir(config.makers, { depth: 5 });
 
 export default config;
