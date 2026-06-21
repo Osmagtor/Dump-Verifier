@@ -73,7 +73,7 @@ jobs:
         run: npm run build
 
       - name: Build packages
-        run: DEBUG=electron-forge:*,electron-packager* npm run release -- --arch=${{ matrix.architecture }}
+        run: DEBUG=electron-forge:*,electron-packager* npm run release --target=deb,rpm --arch=${{ matrix.architecture }}
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v6
@@ -121,7 +121,7 @@ jobs:
         run: npm run build
 
       - name: Build packages
-        run: DEBUG=electron-forge:*,electron-packager* npm run release -- --arch=${{ matrix.architecture }}
+        run: DEBUG=electron-forge:*,electron-packager* npm run release --target=zip --arch=${{ matrix.architecture }}
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v6
@@ -169,7 +169,7 @@ jobs:
       - name: Build packages
         run: |
           $env:DEBUG="electron-forge:*,electron-packager*"
-          npm run release -- --arch=${{ matrix.architecture }}
+          npm run release --target=exe --arch=${{ matrix.architecture }}
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v6
