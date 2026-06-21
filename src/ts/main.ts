@@ -6,7 +6,6 @@ import {
 	ipcMain,
 	dialog,
 	IpcMainInvokeEvent,
-	Cookie,
 	Session,
 } from 'electron';
 import * as path from 'path';
@@ -19,7 +18,6 @@ let baseDir: string;
 
 const winMain: Window = new Window('main', app);
 const winApi: Window = new Window('api', app);
-const winLogin: Window = new Window('login', app);
 
 if (process.platform === 'win32') {
 	baseDir = process.cwd();
@@ -70,27 +68,6 @@ void app.whenReady().then((): void => {
 		},
 	);
 
-	ipcMain.handle(
-		'redumpCookieFetch',
-		async (
-			_: IpcMainInvokeEvent,
-			url: string,
-			cookies: string,
-		): Promise<ArrayBuffer | null> => {
-			try {
-				const res: Response = await fetch(url, {
-					headers: { Cookie: cookies },
-				});
-
-				if (res.ok) return await res.arrayBuffer();
-				else return null;
-			} catch (err: any) {
-				console.error(err);
-				return null;
-			}
-		},
-	);
-
 	ipcMain.handle('getKey', async (): Promise<string> => {
 		winApi.create();
 
@@ -116,63 +93,6 @@ void app.whenReady().then((): void => {
 			// Returning an empty string if the window is closed without inserting a key
 
 			winApi._window.on('closed', (): void => {
-				resolve('');
-			});
-		});
-	});
-
-	ipcMain.handle('redumpLogin', async (): Promise<string> => {
-		return new Promise((resolve: (result: string) => void): void => {
-			winLogin.create();
-
-			if (!winLogin._window) {
-				resolve('');
-				return;
-			}
-
-			// Listening for cookies changes
-
-			const ses: Session = winLogin._window.webContents.session;
-
-			/**
-			 * Helper function to check for the presence of the session cookie and resolve the promise if found
-			 */
-			const checkCookie: () => Promise<void> = async (): Promise<void> => {
-				const cookies: Cookie[] = await ses.cookies.get({
-					url: 'http://forum.redump.org/',
-				});
-				const cookieString: string = cookies
-					.filter((c: Cookie): boolean =>
-						c.name.toLowerCase().includes('redump'),
-					)
-					.map((c: Cookie): string => `${c.name}=${c.value}`)
-					.join('; ');
-
-				// Only resolving if cookies contain a session/login cookie
-
-				if (cookieString.includes('redump')) {
-					resolve(cookieString);
-				}
-			};
-
-			// Periodically checking for the session cookie
-
-			const interval: NodeJS.Timeout = setInterval(checkCookie, 1000);
-
-			// If the user closes the window without logging in
-
-			winLogin._window.on('closed', async (): Promise<void> => {
-				clearInterval(interval);
-
-				// Clearing all cookies for the external link
-				const cookies: Cookie[] = await ses.cookies.get({
-					url: 'http://forum.redump.org/',
-				});
-
-				for (const cookie of cookies) {
-					await ses.cookies.remove('http://forum.redump.org/', cookie.name);
-				}
-
 				resolve('');
 			});
 		});

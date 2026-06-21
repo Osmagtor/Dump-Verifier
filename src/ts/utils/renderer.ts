@@ -162,15 +162,6 @@ $('#api').on('click', async (ev: JQuery.Event): Promise<void> => {
 	toggleArtwork(success, null, null, null);
 });
 
-$('#credentials').on('click', async (ev: JQuery.Event): Promise<void> => {
-	ev.preventDefault();
-
-	const success: boolean = await downloader.getToken();
-
-	if (success) $('#credentials').addClass('active');
-	else $('#credentials').removeClass('active');
-});
-
 $('#log').on('click', (ev: JQuery.Event): void => {
 	ev.preventDefault();
 
@@ -291,10 +282,6 @@ $('#redump').on('click', async (ev: JQuery.Event): Promise<void> => {
 	// Disabling the form while processing
 
 	toggleForm(false, selectorGroup);
-
-	// Clearing the list of Redump systems that require authentication from localStorage
-
-	downloader.clearRequireAuthentication();
 
 	// Calling the deleteDatDirectoryContents IPC handler to delete the contents of the dat/redump directory
 

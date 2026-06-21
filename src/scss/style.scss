@@ -61,7 +61,7 @@ body {
 			top: 20px;
 			right: 20px;
 
-			width: 100px;
+			width: 65px;
 
 			display: flex;
 			justify-content: space-between;
@@ -98,28 +98,6 @@ body {
 				align-items: center;
 
 				background-image: url('../../img/api.svg');
-				background-size: contain;
-				background-repeat: no-repeat;
-
-				filter: grayscale(1);
-
-				cursor: pointer;
-
-				&.active {
-					filter: grayscale(0);
-				}
-			}
-
-			#credentials {
-				width: 22px;
-				height: 22px;
-				font-size: 20px;
-
-				display: flex;
-				justify-content: center;
-				align-items: center;
-
-				background-image: url('../../img/key.svg');
 				background-size: contain;
 				background-repeat: no-repeat;
 

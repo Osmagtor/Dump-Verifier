@@ -3,16 +3,13 @@ import JSZip from 'jszip';
 import type { data, systemData } from '../types.js';
 
 class Downloader {
-	private static readonly redumpURL: string =
-		'http://wiki.redump.org/index.php?title=List_of_DB_Download_Links';
+	private static readonly redumpURL: string = 'https://redump.info/downloads';
 
 	private readonly systems: systemData[] = [];
 	private loaded: number = 0;
 	private total: number = 0;
 
 	private readonly logger: Logger;
-	private cookies: string = '';
-	private requireAuthentication!: Record<string, boolean>;
 
 	/**
 	 * Getter for the list of systems with their corresponding DAT file paths
@@ -27,52 +24,6 @@ class Downloader {
 	 */
 	constructor(logger: Logger) {
 		this.logger = logger;
-		this.requireAuthentication = this.getRequireAuthentication();
-	}
-
-	/**
-	 * Clears the list of systems that require authentication from localStorage
-	 */
-	public clearRequireAuthentication(): void {
-		this.requireAuthentication = {};
-		this.storeRequireAuthentication(this.requireAuthentication);
-	}
-
-	/**
-	 * Gets the list of systems from Redump.org that require authentication from localStorage
-	 * @returns {Record<string, boolean>} An object where the keys are system names and the values indicate whether authentication is required
-	 */
-	private getRequireAuthentication(): Record<string, boolean> {
-		try {
-			const requireAuthenticationString: string | null = localStorage.getItem(
-				'requireAuthentication',
-			);
-
-			if (requireAuthenticationString) {
-				return JSON.parse(requireAuthenticationString);
-			}
-		} catch (err: any) {
-			console.error('Error parsing requireAuthentication:', err);
-		}
-
-		return {};
-	}
-
-	/**
-	 * Stores the list of systems from Redump.org that require authentication in localStorage
-	 * @param {Record<string, boolean>} requireAuthentication An object where the keys are system names and the values indicate whether authentication is required
-	 */
-	private storeRequireAuthentication(
-		requireAuthentication: Record<string, boolean>,
-	): void {
-		try {
-			localStorage.setItem(
-				'requireAuthentication',
-				JSON.stringify(requireAuthentication),
-			);
-		} catch (err: any) {
-			console.error('Error storing requireAuthentication:', err);
-		}
 	}
 
 	/**
@@ -87,10 +38,15 @@ class Downloader {
 
 			if (res.ok) {
 				const htmlRaw: string = await res.text();
-				Array.from(
-					htmlRaw.matchAll(/http:\/\/redump.org\/datfile\/[a-zA-Z0-9]+\//g),
-				).forEach((match: RegExpMatchArray): void => {
-					if (!links.includes(match[0])) links.push(match[0]);
+				const htmlParsed: Document = new DOMParser().parseFromString(
+					htmlRaw,
+					'text/html',
+				);
+				const anchors: NodeListOf<HTMLAnchorElement> =
+					htmlParsed.querySelectorAll('a[href*="/datfile/"]');
+
+				anchors.forEach((anchor: HTMLAnchorElement): void => {
+					links.push(anchor.href.replace('file://', ''));
 				});
 			}
 		} catch {
@@ -104,23 +60,6 @@ class Downloader {
 		}
 
 		return links;
-	}
-
-	/**
-	 * Gets the authentication token
-	 * @returns {boolean} `True` if the token was successfully obtained, `false` otherwise
-	 */
-	public async getToken(): Promise<boolean> {
-		this.cookies = await (window as any).electron.ipcRenderer.invoke(
-			'redumpLogin',
-		);
-
-		if (this.cookies) {
-			this.logger.add('Successfully logged in');
-			return true;
-		} else {
-			return false;
-		}
 	}
 
 	/**
@@ -257,9 +196,7 @@ class Downloader {
 
 		try {
 			for (const url of urls) {
-				const baseName: string = url
-					.replace('http://redump.org/datfile/', '')
-					.replace(/\/+$/, '');
+				const baseName: string = url.replace(/.*\/datfile\//, '');
 
 				const datFileName: string = baseName + '.dat';
 				const jsonFileName: string = baseName + '.json';
@@ -269,11 +206,9 @@ class Downloader {
 				).electron.ipcRenderer.invoke('checkFile', jsonFileName, folder);
 
 				if (!exists) {
-					let dataFetched: ArrayBuffer | undefined;
-
-					if (!this.requireAuthentication[baseName]) {
-						dataFetched = await this.fetch(url + datFileName);
-					}
+					let dataFetched: ArrayBuffer | undefined = await this.fetch(
+						Downloader.redumpURL.replace('/downloads', '') + url,
+					);
 
 					if (dataFetched) {
 						const xmlText: string | undefined =
@@ -320,21 +255,9 @@ class Downloader {
 								`Failed to unzip DAT file from "${url}"`,
 								'error',
 							);
-							this.logger.add(
-								'It probably requires authentication and dumper status',
-								'error',
-							);
-
-							this.requireAuthentication[baseName] = true;
-							this.storeRequireAuthentication(this.requireAuthentication);
 						}
-					} else if (!this.requireAuthentication[baseName]) {
-						this.logger.add(`Failed to fetch files from "${url}"`, 'error');
 					} else {
-						this.logger.add(
-							`Skipping "${datFileName}" as it requires authentication and dumper status`,
-							'error',
-						);
+						this.logger.add(`Failed to fetch files from "${url}"`, 'error');
 					}
 				} else {
 					this.logger.add(
@@ -369,15 +292,8 @@ class Downloader {
 	 */
 	private async fetch(url: string): Promise<ArrayBuffer | undefined> {
 		try {
-			if (this.cookies) {
-				const ab: ArrayBuffer = await (
-					window as any
-				).electron.ipcRenderer.invoke('redumpCookieFetch', url, this.cookies);
-				if (ab) return ab;
-			} else {
-				const res: Response = await fetch(url);
-				if (res.ok) return await res.arrayBuffer();
-			}
+			const res: Response = await fetch(url);
+			if (res.ok) return await res.arrayBuffer();
 		} catch (err: any) {
 			console.error(err);
 		}
