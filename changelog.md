@@ -1,3 +1,7 @@
+# v2.0.5
+
+- Updated the URL filtering logic when downloading the `.dat` files from `Redump.info`.
+
 # v2.0.4
 
 - Updated the `Redump` URL after the `Redump` team migrated to [`Redump.info`](https://redump.info/).
