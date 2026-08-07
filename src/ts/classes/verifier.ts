@@ -110,6 +110,7 @@ export default class Verifier {
 
 		// Starting with the verification process
 
+		let game: string = '';
 		let found: boolean = false;
 		let sha1: string = await (window as any).electron.ipcRenderer.invoke(
 			'hash',
@@ -117,6 +118,7 @@ export default class Verifier {
 		);
 
 		if (this.game && this.system) {
+			game = this.game;
 			const gameData: data | undefined = this.findGame();
 
 			if (gameData) {
@@ -162,18 +164,18 @@ export default class Verifier {
 
 			if (gameData) {
 				found = true;
-				this.game = gameData.name;
+				game = gameData.name;
 			}
 		}
 
 		// Adding the image if a match was found
 
 		const imgData: { base64: string; aspectRatio: string } | null =
-			await this.api.getImage(this.systemText, this.game);
+			await this.api.getImage(this.systemText, game);
 
 		addImageToVerified(
 			imgData?.base64 ?? '',
-			this.game ?? '',
+			game ?? '',
 			imgData?.aspectRatio ?? '',
 			found,
 		);
@@ -184,7 +186,7 @@ export default class Verifier {
 
 		this.logger.add(`Calculated SHA1: <i>"${sha1}"</i>`);
 		this.logger.add(
-			`${found ? `Match found: <i>"${this.game}"</i> (${this.systemText})` : 'No match found'}`,
+			`${found ? `Match found: <i>"${game}"</i> (${this.systemText})` : 'No match found'}`,
 			found ? 'success' : 'error',
 		);
 		this.logger.emptyLine();
