@@ -49,7 +49,7 @@ jobs:
       - name: Install dependencies
         run: |
           npm pkg delete scripts.prepare
-          npm install
+          npm ci
         continue-on-error: true
 
       - name: Clear npm cache (if install fails)

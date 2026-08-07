@@ -1,3 +1,8 @@
+# v2.0.6
+
+- Fixed an issue that prevented multiple games from being verified at once correctly.
+- Fixed an issue causing some builds to fail to install on Windows and macOS. If you experience any issues, please report them.
+
 # v2.0.5
 
 - Updated the URL filtering logic when downloading the `.dat` files from `Redump.info`.
