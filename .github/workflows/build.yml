@@ -53,8 +53,7 @@ jobs:
       - name: Install dependencies
         run: |
           npm pkg delete scripts.prepare
-          npm install
-        continue-on-error: true
+          npm ci
 
       - name: Dump versions
         run: |
@@ -108,8 +107,7 @@ jobs:
       - name: Install dependencies
         run: |
           npm pkg delete scripts.prepare
-          npm install
-        continue-on-error: true
+          npm ci
 
       - name: Dump versions
         run: |
@@ -156,8 +154,7 @@ jobs:
       - name: Install dependencies
         run: |
           npm pkg delete scripts.prepare
-          npm install
-        continue-on-error: true
+          npm ci
 
       - name: Dump versions
         run: |
