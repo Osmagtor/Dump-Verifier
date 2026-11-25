@@ -1,3 +1,8 @@
+# v2.0.8
+
+- Fixed an issue causing some builds to come out wrong.
+- Fixed an issue that was preventing Windows builds from fetching `.dat` files.
+
 # v2.0.7
 
 - Changed Linux package compilation to .AppImage files for broader compatibility.
