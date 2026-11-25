@@ -11,3 +11,4 @@ dist
 .prettierignore
 .prettier
 LICENSE
+.npmrc

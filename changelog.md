@@ -1,3 +1,7 @@
+# v2.0.7
+
+- Changed Linux package compilation to .AppImage files for broader compatibility.
+
 # v2.0.6
 
 - Fixed an issue that prevented multiple games from being verified at once correctly.

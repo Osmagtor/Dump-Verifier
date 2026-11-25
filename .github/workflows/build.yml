@@ -80,9 +80,7 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: dump-verifier-linux-${{ needs.set-version.outputs.version }}-${{ matrix.architecture }}
-          path: |
-            out/make/**/*.deb
-            out/make/**/*.rpm
+          path: out/make/**/*.AppImage
           retention-days: 1
           overwrite: true
 
