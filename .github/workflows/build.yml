@@ -236,10 +236,24 @@ jobs:
           echo "Found artifacts:"
           echo "$FILES"
 
+      - name: Give Windows installers architecture-specific names
+        run: |
+          x64_setup=$(find artifacts/windows-x64 -type f -name '*Setup.exe' -print -quit)
+          arm64_setup=$(find artifacts/windows-arm64 -type f -name '*Setup.exe' -print -quit)
+
+          if [ -z "$x64_setup" ] || [ -z "$arm64_setup" ]; then
+            echo "Could not find both Windows setup executables."
+            exit 1
+          fi
+
+
+          cp "$x64_setup" "artifacts/dump-verifier-${{ needs.set-version.outputs.version }}-x64-setup.exe"
+          cp "$arm64_setup" "artifacts/dump-verifier-${{ needs.set-version.outputs.version }}-arm64-setup.exe"
+
       - name: Extract changelog for release
         id: extract_changelog
         run: |
-          changelog=$(awk '/# ${{ needs.set-version.outputs.version }}/{flag=1; next} /^#/{flag=0} flag' changelog.md)
+          changelog=$(awk '/^# /{if (found) exit; found=1; next} found' changelog.md)
           echo "$changelog"
           echo "changelog<<EOF" >> $GITHUB_ENV
           echo "$changelog" >> $GITHUB_ENV
@@ -255,9 +269,9 @@ jobs:
           prerelease: false
           make_latest: true
           files: |
-            artifacts/linux-arm64/**/*.{deb,rpm}
-            artifacts/linux-x64/**/*.{deb,rpm}
+            artifacts/linux-arm64/**/*.AppImage
+            artifacts/linux-x64/**/*.AppImage
             artifacts/macos-arm64/**/*.zip
             artifacts/macos-x64/**/*.zip
-            artifacts/windows-arm64/**/*.exe
-            artifacts/windows-x64/**/*.exe
+            artifacts/dump-verifier-${{ needs.set-version.outputs.version }}-arm64-setup.exe
+            artifacts/dump-verifier-${{ needs.set-version.outputs.version }}-x64-setup.exe
