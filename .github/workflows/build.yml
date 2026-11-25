@@ -246,9 +246,8 @@ jobs:
             exit 1
           fi
 
-
-          cp "$x64_setup" "artifacts/dump-verifier-${{ needs.set-version.outputs.version }}-x64-setup.exe"
-          cp "$arm64_setup" "artifacts/dump-verifier-${{ needs.set-version.outputs.version }}-arm64-setup.exe"
+          cp "$x64_setup" "artifacts/Dump-Verifier-${{ needs.set-version.outputs.version }}-x64-Setup.exe"
+          cp "$arm64_setup" "artifacts/Dump-Verifier-${{ needs.set-version.outputs.version }}-arm64-Setup.exe"
 
       - name: Extract changelog for release
         id: extract_changelog
@@ -273,5 +272,5 @@ jobs:
             artifacts/linux-x64/**/*.AppImage
             artifacts/macos-arm64/**/*.zip
             artifacts/macos-x64/**/*.zip
-            artifacts/dump-verifier-${{ needs.set-version.outputs.version }}-arm64-setup.exe
-            artifacts/dump-verifier-${{ needs.set-version.outputs.version }}-x64-setup.exe
+            artifacts/Dump-Verifier-${{ needs.set-version.outputs.version }}-arm64-Setup.exe
+            artifacts/Dump-Verifier-${{ needs.set-version.outputs.version }}-x64-Setup.exe
