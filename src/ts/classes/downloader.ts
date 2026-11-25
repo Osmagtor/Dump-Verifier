@@ -45,17 +45,12 @@ class Downloader {
 				const anchors: NodeListOf<HTMLAnchorElement> =
 					htmlParsed.querySelectorAll('a[href*="/datfile/"]');
 
-				anchors.forEach((anchor: HTMLAnchorElement): void => {
-					// The link can only contain 2 slashes, so we check for that to avoid any unwanted links
-
-					const slashCount: number = (
-						anchor.href.replace('file://', '').match(/\//g) || []
-					).length;
-
-					if (slashCount <= 2) {
-						links.push(anchor.href.replace('file://', ''));
-					}
-				});
+				links.push(
+					...Array.from(anchors).map(
+						(anchor: HTMLAnchorElement): string =>
+							`/${anchor.href.split('/').slice(-2).join('/')}`,
+					),
+				);
 			}
 		} catch {
 			const info: { file: string; content: string }[] = await (
